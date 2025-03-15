@@ -33,6 +33,38 @@ ItemCosts.raw_costs = {
     -- So that is 150 oil/sec == 30 ore/sec.
     ['crude-oil'] = { cost = 2, crafting_time = 0.1 / 0.8, icon = '[fluid=crude-oil]' },
     ['water'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+
+    --gleba
+    ['jelly'] = { cost = 7, crafting_time = 1, icon = '[item=jelly]' },
+    ['yumako-mash'] = { cost = 14, crafting_time = 1, icon = '[item=yumako-mash]' },
+
+    --fulgora
+    ['holmium-ore'] = { cost = 15, crafting_time = 1 / 1200, icon = '[item=holmium-ore]' },
+
+    --aquilo
+    ['cryogenic-science-pack'] = { cost = 500, crafting_time = 30, icon = '[item=cryogenic-science-pack]' },
+
+    --promethium
+    ['quantum-processor'] = { cost = 200, crafting_time = 30, icon = '[item=quantum-processor]' },
+    ['promethium-asteroid-chunk'] = { cost = 800, crafting_time = 200, icon = '[item=promethium-asteroid-chunk]' },
+
+    ['fluoroketone-hot'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['fluoroketone-cold'] = { cost = 0, crafting_time = 2, icon = '[fluid=water]' },
+    ['lithium-brine'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['ammonia'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=ammonia]' },
+    ['tungsten-ore'] = { cost = 0, crafting_time = 5, icon = '[item=tungsten-ore]' },
+    ['calcite'] = { cost = 0, crafting_time = 2, icon = '[item=calcite]' },
+    ['ice'] = { cost = 0, crafting_time = 2, icon = '[item=ice]' },
+    ['iron-bacteria'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['copper-bacteria'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['nutrients'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['spoilage'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['jellynut-seed'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['yumako-seed'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['tree-seed'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['metallic-asteroid-chunk'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['carbonic-asteroid-chunk'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
+    ['oxide-asteroid-chunk'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
 }
 
 local raw_costs = ItemCosts.raw_costs

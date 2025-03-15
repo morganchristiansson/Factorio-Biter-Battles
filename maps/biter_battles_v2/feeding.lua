@@ -188,7 +188,7 @@ function Public.add_feeding_stats(
         if storage.science_logs_total_north == nil then
             storage.science_logs_total_north = { 0 }
             storage.science_logs_total_south = { 0 }
-            for _ = 1, 11 do
+            for _ = 1, 12 do
                 table.insert(storage.science_logs_total_north, 0)
                 table.insert(storage.science_logs_total_south, 0)
             end
@@ -360,9 +360,11 @@ function Public.feed_biters_mixed_from_inventory(player, button)
         'electromagnetic-science-pack',
         'agricultural-science-pack',
         'cryogenic-science-pack',
+        'promethium-science-pack',
     }
     if button == defines.mouse_button_type.right then
         food = {
+            'promethium-science-pack',
             'cryogenic-science-pack',
             'agricultural-science-pack',
             'electromagnetic-science-pack',

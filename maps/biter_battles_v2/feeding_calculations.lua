@@ -179,6 +179,9 @@ function Public.calc_send_command(
                 if v == 'aquilo' or starts_with(v, 'cr') then
                     v = 'cryogenic-science-pack'
                 end
+                if v == 'promethium' or v == 'dark' or starts_with(v, 'pr') then
+                    v = 'promethium-science-pack'
+                end
                 local values = Tables.food_values[v]
                 if values == nil then
                     error_msg = 'Invalid science pack color'

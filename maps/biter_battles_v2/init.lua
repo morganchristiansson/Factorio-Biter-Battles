@@ -490,7 +490,6 @@ function Public.forces()
         game.forces[force.name].technologies['planet-discovery-gleba'].enabled = false
         game.forces[force.name].technologies['planet-discovery-vulcanus'].enabled = false
         game.forces[force.name].technologies['planet-discovery-aquilo'].enabled = false
-        game.forces[force.name].technologies['promethium-science-pack'].enabled = false
         game.forces[force.name].technologies['artillery'].enabled = false
         game.forces[force.name].technologies['artillery-shell-range-1'].enabled = false
         game.forces[force.name].technologies['artillery-shell-speed-1'].enabled = false
