@@ -36,7 +36,7 @@ end
 -- Trust player automatically after a certain amount of times
 local function autotrust_player(player)
   local playerName = player.name
-  local playtimeRequiredForAutoTrust = 5184000 -- 24h
+  local playtimeRequiredForAutoTrust = 216000 -- 1h
   if
     not trusted[playerName]
     and storage.total_time_online_players[playerName] ~= nil
