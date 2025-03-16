@@ -3,7 +3,6 @@ local Session = require('utils.datastore.session_data')
 local Game = require('utils.game')
 local Token = require('utils.token')
 local Task = require('utils.task')
-local Server = require('utils.server')
 local Event = require('utils.event')
 local Utils = require('utils.core')
 
@@ -17,8 +16,6 @@ local settings = {
     playtime_for_instant_jail = 103680000, -- 20 days
     votejail_count = 3,
 }
-local set_data = Server.set_data
-local try_get_data = Server.try_get_data
 local concat = table.concat
 
 local valid_commands = {
@@ -302,15 +299,6 @@ local vote_to_jail = function(player, griefer, msg)
         votejail[griefer][player.name] = true
         votejail[griefer].index = votejail[griefer].index + 1
         Utils.print_to(player, 'You have voted to jail player ' .. griefer .. '.')
-        if
-            votejail[griefer].index >= settings.votejail_count
-            or (
-                votejail[griefer].index == #game.connected_players - 1
-                and #game.connected_players > votejail[griefer].index
-            )
-        then
-            Public.try_ul_data(griefer, true, votejail[griefer].actor, msg)
-        end
     else
         Utils.print_to(player, 'You have already voted to kick ' .. griefer .. '.')
     end
@@ -377,7 +365,6 @@ local jail = function(player, griefer, msg)
     game.get_player(griefer).driving = false
 
     jailed[griefer] = { jailed = true, actor = player, reason = msg }
-    set_data(jailed_data_set, griefer, { jailed = true, actor = player, reason = msg })
 
     Utils.print_to(nil, message)
     Utils.action_warning_embed('{Jailed}', message)
@@ -443,18 +430,6 @@ end)
 
 --- Tries to get data from the webpanel and updates the local table with values.
 -- @param data_set player token
-function Public.try_dl_data(key)
-    key = tostring(key)
-
-    local secs = Server.get_current_time()
-
-    if not secs then
-        return
-    else
-        try_get_data(jailed_data_set, key, is_jailed)
-    end
-end
-
 --- Tries to get data from the webpanel and updates the local table with values.
 -- @param data_set player token
 function Public.try_ul_data(key, value, player, message)
@@ -504,8 +479,6 @@ Event.add(defines.events.on_player_joined_game, function(event)
     if not player or not player.valid then
         return
     end
-
-    Public.try_dl_data(player.name)
 end)
 
 Event.add(defines.events.on_console_command, function(event)
@@ -579,10 +552,6 @@ Event.add(defines.events.on_console_command, function(event)
                         'Abusing the jail command will lead to revoked permissions. Jailing someone in case of disagreement is not OK!'
                     )
                 end
-                Public.try_ul_data(griefer, true, player.name, message)
-                return
-            elseif cmd == 'free' then
-                Public.try_ul_data(griefer, false, player.name)
                 return
             end
         end
@@ -591,16 +560,6 @@ end)
 
 Event.add(defines.events.on_player_changed_surface, on_player_changed_surface)
 Event.on_init(create_gulag_surface)
-
-Server.on_data_set_changed(jailed_data_set, function(data)
-    if data and data.value then
-        if data.value.jailed and data.value.actor then
-            jail(data.value.actor, data.key)
-        end
-    else
-        free('script', data.key)
-    end
-end)
 
 commands.add_command('jail', 'Sends the player to gulag! Valid arguments are:\n/jail <LuaPlayer> <reason>', function()
     return

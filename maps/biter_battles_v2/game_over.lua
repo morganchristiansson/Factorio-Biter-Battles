@@ -301,17 +301,6 @@ function Public.server_restart()
                 local message = 'Soft-reset is disabled! Server will restart from scenario to load new changes.'
                 game.print(message, { color = { r = 0.22, g = 0.88, b = 0.22 } })
                 Server.to_discord_bold(table.concat({ '*** ', message, ' ***' }))
-                Server.start_scenario('Biter_Battles')
-                storage.announced_message = true
-                return
-            end
-        end
-        if storage.shutdown then
-            if not storage.announced_message then
-                local message = 'Soft-reset is disabled! Server will shutdown. Most likely because of updates.'
-                game.print(message, { color = { r = 0.22, g = 0.88, b = 0.22 } })
-                Server.to_discord_bold(table.concat({ '*** ', message, ' ***' }))
-                Server.stop_scenario()
                 storage.announced_message = true
                 return
             end
@@ -488,11 +477,6 @@ function Public.silo_death(event)
             storage.tournament_mode = false
             game.print('Tournament mode is now disabled')
             game.print('Updating logs for the game')
-            if special.communityPickingMode then
-                Server.send_special_game_state('[COMMUNITY-PICK]')
-            else
-                Server.send_special_game_state('[CAPTAIN-SPECIAL]')
-            end
             log_to_db('>Game has ended\n', false)
             log_to_db('[RefereeName]' .. special.stats.InitialReferee .. '\n', true)
             if special.stats.NorthInitialCaptain then

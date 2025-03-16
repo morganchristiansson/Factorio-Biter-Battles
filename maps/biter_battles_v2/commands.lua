@@ -1,6 +1,3 @@
-local Server = require('utils.server')
-local mapkeeper = '[color=blue]Mapkeeper:[/color]'
-
 commands.add_command('scenario', 'Usable only for admins - controls the scenario!', function(cmd)
     local p
     local player = game.player
@@ -44,33 +41,12 @@ commands.add_command('scenario', 'Usable only for admins - controls the scenario
             storage.reset_are_you_sure = nil
             storage.restart = true
             storage.soft_reset = false
-            if storage.shutdown then
-                storage.shutdown = false
-            end
             p('[WARNING] Soft-reset is disabled! Server will restart from scenario.')
             return
         end
     elseif param == 'restartnow' then
         storage.reset_are_you_sure = nil
         p(player.name .. ' has restarted the game.')
-        Server.start_scenario('Biter_Battles')
         return
-    elseif param == 'shutdown' then
-        if storage.shutdown then
-            storage.reset_are_you_sure = nil
-            storage.shutdown = false
-            storage.soft_reset = true
-            p('[SUCCESS] Soft-reset is enabled.')
-            return
-        else
-            storage.reset_are_you_sure = nil
-            storage.shutdown = true
-            storage.soft_reset = false
-            if storage.restart then
-                storage.restart = false
-            end
-            p('[WARNING] Soft-reset is disabled! Server will shutdown.')
-            return
-        end
     end
 end)

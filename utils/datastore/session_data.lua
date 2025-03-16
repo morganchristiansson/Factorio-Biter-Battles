@@ -2,115 +2,101 @@ local Global = require('utils.global')
 local Game = require('utils.game')
 local Token = require('utils.token')
 local Task = require('utils.task')
-local Server = require('utils.server')
 local Event = require('utils.event')
 local table = require('utils.table')
 
-local set_timeout_in_ticks = Task.set_timeout_in_ticks
-local session_data_set = 'sessions'
 local session = {}
-local online_track = {}
 local trusted = {}
-local settings = {
-    nth_tick = 54000, --15min
-}
-local set_data = Server.set_data
-local try_get_data = Server.try_get_data
-local concat = table.concat
+--local nth_tick = 54000 --15min
 
 Global.register({
-    session = session,
-    online_track = online_track,
-    trusted = trusted,
-    settings = settings,
+  session = session,
+  trusted = trusted,
 }, function(tbl)
-    session = tbl.session
-    online_track = tbl.online_track
-    trusted = tbl.trusted
-    settings = tbl.settings
+  session = tbl.session
+  trusted = tbl.trusted
 end)
 
 local Public = {}
 
-local nth_tick_token = Token.register(function(data)
-    local player = data.player
-    if player and player.valid then
-        Server.upload_time_played(player)
-        Public.autotrust_player(player.name)
-    end
-end)
+local function update_time_played(player)
+  if not storage.already_logged_current_session_time_online_players[player.name] then
+    storage.already_logged_current_session_time_online_players[player.name] = 0
+  end
+  if not storage.total_time_online_players[player.name] then
+    storage.total_time_online_players[player.name] = 0
+  end
+  local time_to_add = player.online_time - storage.already_logged_current_session_time_online_players[player.name]
 
---- Uploads each connected players play time to the dataset
-local function upload_data()
-    local players = game.connected_players
-    local count = 0
-    for i = 1, #players do
-        count = count + 1
-        local player = players[i]
-        local random_timing = count * 5
-        set_timeout_in_ticks(random_timing, nth_tick_token, { player = player })
-    end
+  storage.already_logged_current_session_time_online_players[player.name] = storage.already_logged_current_session_time_online_players[player.name]
+      + time_to_add
+  storage.total_time_online_players[player.name] = storage.total_time_online_players[player.name] + time_to_add
 end
 
 -- Trust player automatically after a certain amount of times
-function Public.autotrust_player(playerName)
-    local playtimeRequiredForAutoTrust = 5184000 -- 24h
-    if
-        not trusted[playerName]
-        and storage.total_time_online_players[playerName] ~= nil
-        and storage.total_time_online_players[playerName] >= playtimeRequiredForAutoTrust
-    then
-        trusted[playerName] = true
-    end
+local function autotrust_player(player)
+  local playerName = player.name
+  local playtimeRequiredForAutoTrust = 5184000 -- 24h
+  if
+    not trusted[playerName]
+    and storage.total_time_online_players[playerName] ~= nil
+    and storage.total_time_online_players[playerName] >= playtimeRequiredForAutoTrust
+  then
+    trusted[playerName] = true
+  end
 end
 
---- Prints out game.tick to real hour/minute
----@param ticks integer
----@param h boolean
----@param m boolean
----@return string?
-function Public.format_time(ticks, h, m)
-    local seconds = ticks / 60
-    local minutes = math.floor(seconds / 60)
-    local hours = math.floor(minutes / 60)
-    local min = math.floor(minutes - 60 * hours)
-    if h and m then
-        return string.format('%dh:%02dm', hours, minutes, min)
-    elseif h then
-        return string.format('%dh', hours)
-    elseif m then
-        return string.format('%02dm', minutes, min)
-    end
+local function persist_playtime()
+  local key = 'total_time_online_players'
+  if game.is_multiplayer() then
+    helpers.write_file('storage.' .. key, serpent.line(storage[key]), false, 0)
+  else
+    -- single player testing
+    helpers.write_file('storage.' .. key, serpent.line(storage[key]), false)
+  end
 end
+
 --- Returns the table of session
 -- @return <table>
 function Public.get_session_table()
-    return session
+  return session
 end
 
 --- Returns the table of trusted
 -- @return <table>
 function Public.get_trusted_table()
-    return trusted
+  return trusted
 end
 
 Event.add(defines.events.on_player_joined_game, function(event)
-    local player = game.get_player(event.player_index)
-    if not player or not player.valid then
-        return
-    end
-    Server.set_total_time_played(player)
-    Public.autotrust_player(player.name)
+  local player = game.get_player(event.player_index)
+  if not player or not player.valid then
+    return
+  end
+  autotrust_player(player)
 end)
 
 Event.add(defines.events.on_player_left_game, function(event)
-    local player = game.get_player(event.player_index)
-    if not player or not player.valid then
-        return
-    end
-    Server.upload_time_played(player)
+  local player = game.get_player(event.player_index)
+  if not player or not player.valid then
+    return
+  end
+  update_time_played(player)
+  persist_playtime()
 end)
 
-Event.on_nth_tick(settings.nth_tick, upload_data)
+local nth_tick = 3600 --1min
+local function nth_tick_function()
+  local players = game.connected_players
+  for i = 1, #players do
+    local player = players[i]
+    if player and player.valid then
+      update_time_played(player)
+      autotrust_player(player)
+    end
+  end
+  persist_playtime()
+end
+Event.on_nth_tick(nth_tick, nth_tick_function)
 
 return Public

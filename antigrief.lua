@@ -7,7 +7,6 @@ local session = require('utils.datastore.session_data')
 local Global = require('utils.global')
 local Utils = require('utils.core')
 local Color = require('utils.color_presets')
-local Server = require('utils.server')
 local Jail = require('utils.datastore.jail_data')
 local pool = require('maps.biter_battles_v2.pool')
 local Functions = require('maps.biter_battles_v2.functions')
@@ -41,13 +40,11 @@ local this = {
     },
     whitelist_types = {},
     permission_group_editing = {},
-    players_warned = {},
     damage_history = {},
     punish_cancel_craft = false,
     log_tree_harvest = false,
     do_not_check_trusted = true,
     enable_autokick = false,
-    enable_autoban = false,
     enable_jail = false,
     enable_capsule_warning = false,
     enable_capsule_cursor_warning = false,
@@ -171,21 +168,6 @@ local function do_action(player, prefix, msg, ban_msg, kill)
 
     damage_player(player, kill)
     Utils.action_warning(prefix, msg)
-
-    if this.players_warned[player.index] == 2 then
-        if this.enable_autoban then
-            Server.ban_sync(player.name, ban_msg, '<script>')
-        end
-    elseif this.players_warned[player.index] == 1 then
-        this.players_warned[player.index] = 2
-        if this.enable_jail then
-            Jail.try_ul_data(player, true, 'script')
-        elseif this.enable_autokick then
-            game.kick_player(player, msg)
-        end
-    else
-        this.players_warned[player.index] = 1
-    end
 end
 
 ---returns missing trust warning and chat color
@@ -278,7 +260,7 @@ local function on_player_joined_game(event)
     end
 
     if match(player.name, '^[Ili1|]+$') then
-        Server.ban_sync(player.name, '', '<script>') -- No reason given, to not give them any hints to change their name
+        game.ban_player(player, '<script>') -- No reason given, to not give them any hints to change their name
     end
 end
 

@@ -204,13 +204,6 @@ local function on_console_command(event)
         return
     end
 
-    local server_time = Server.get_current_time()
-    if server_time then
-        server_time = format(' (Server time: %s)', Timestamp.to_string(server_time))
-    else
-        server_time = ' at tick: ' .. game.tick
-    end
-
     if string.len(param) <= 0 then
         param = nil
     end
@@ -220,27 +213,27 @@ local function on_console_command(event)
             if p.admin == true and p.name ~= player.name then
                 if param then
                     p.print(
-                        player.name .. ' ran: ' .. cmd .. ' "' .. param .. '" ' .. server_time,
+                        player.name .. ' ran: ' .. cmd .. ' "' .. param .. '"',
                         { color = { r = 0.22, g = 0.99, b = 0.99 } }
                     )
                 else
-                    p.print(player.name .. ' ran: ' .. cmd .. server_time, { color = { r = 0.22, g = 0.99, b = 0.99 } })
+                    p.print(player.name .. ' ran: ' .. cmd, { color = { r = 0.22, g = 0.99, b = 0.99 } })
                 end
             end
         end
         if param then
-            print(player.name .. ' ran: ' .. cmd .. ' "' .. param .. '" ' .. server_time)
+            print(player.name .. ' ran: ' .. cmd .. ' "' .. param .. '"')
             return
         else
-            print(player.name .. ' ran: ' .. cmd .. server_time)
+            print(player.name .. ' ran: ' .. cmd)
             return
         end
     else
         if param then
-            print('ran: ' .. cmd .. ' "' .. param .. '" ' .. server_time)
+            print('ran: ' .. cmd .. ' "' .. param .. '"')
             return
         else
-            print('ran: ' .. cmd .. server_time)
+            print('ran: ' .. cmd)
             return
         end
     end

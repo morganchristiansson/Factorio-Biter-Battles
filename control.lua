@@ -1,18 +1,11 @@
 require('utils.data_stages')
 _LIFECYCLE = _STAGE.control -- Control stage
 
-require('utils.server')
-require('utils.server_commands')
 require('utils.utils')
 require('utils.table')
 require('utils.sounds')
---require 'utils.datastore.server_ups'
-require('utils.datastore.color_data')
 require('utils.datastore.session_data')
 require('utils.datastore.jail_data')
-require('utils.datastore.quickbar_data')
-require('utils.datastore.message_on_join_data')
-require('utils.datastore.player_tag_data')
 require('utils.muted')
 
 require('chatbot')
