@@ -239,9 +239,14 @@ Public.difficulty_lowered_names_to_index = {
 Public.forces_list = { 'all teams', 'north', 'south' }
 Public.science_list = {
     'all science',
-    'very high tier (space, utility, production)',
-    'high tier (space, utility, production, chemical)',
-    'mid+ tier (space, utility, production, chemical, military)',
+    'very high tier (promethium, aquilo, fulgora)',
+    'high tier (promethium, aquilo, fulgora, vulcanus, utility)',
+    'mid+ tier (promethium, aquilo, fulgora, vulcanus, utility, production, gleba, chemical, military)',
+    'promethium',
+    'aquilo',
+    'fulgora',
+    'vulcanus',
+    'gleba',
     'space',
     'utility',
     'production',

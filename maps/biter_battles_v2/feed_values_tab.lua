@@ -31,9 +31,16 @@ local raw_cost_display_order = {
     -- We intentionally exclude "water" because it is very inaccurate due
     -- to not really properly estimating oil cracking
 
+    --space
+    'ice',
+
     --gleba
     'jelly',
     'yumako-mash',
+
+    --vulcanus
+    'tungsten-ore',
+    'calcite',
 
     --fulgora
     'holmium-ore',

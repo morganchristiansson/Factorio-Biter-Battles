@@ -61,8 +61,8 @@ local function add_science_logs(player, element)
         end
     end
 
-    local width_summary_columns = tonumber(94)
-    local width_summary_first_column = tonumber(110)
+    local width_summary_columns = tonumber(55)
+    local width_summary_first_column = tonumber(120)
     local column_widths = { width_summary_first_column }
     for i = 1, #food_long_and_short do
         column_widths[#column_widths + 1] = width_summary_columns
@@ -209,17 +209,26 @@ local function add_science_logs(player, element)
             then
                 if
                     dropdown_science.selected_index == 1
-                    or (dropdown_science.selected_index == 2 and (easy_food_name:match('space') or easy_food_name:match(
-                        'utility'
-                    ) or easy_food_name:match('production')))
-                    or (dropdown_science.selected_index == 3 and (easy_food_name:match('space') or easy_food_name:match(
-                        'utility'
-                    ) or easy_food_name:match('production') or easy_food_name:match('chemical')))
-                    or (dropdown_science.selected_index == 4 and (easy_food_name:match('space') or easy_food_name:match(
-                        'utility'
-                    ) or easy_food_name:match('production') or easy_food_name:match('chemical') or easy_food_name:match(
-                        'military'
-                    )))
+                    or (dropdown_science.selected_index == 2
+                      and (easy_food_name:match('promethium')
+                        or easy_food_name:match('aquilo')
+                        or easy_food_name:match('fulgora')))
+                    or (dropdown_science.selected_index == 3
+                      and (easy_food_name:match('promethium')
+                        or easy_food_name:match('aquilo')
+                        or easy_food_name:match('fulgora')
+                        or easy_food_name:match('vulcanus')
+                        or easy_food_name:match('utility')))
+                    or (dropdown_science.selected_index == 4
+                      and (easy_food_name:match('promethium')
+                        or easy_food_name:match('aquilo')
+                        or easy_food_name:match('fulgora')
+                        or easy_food_name:match('vulcanus')
+                        or easy_food_name:match('utility')
+                        or easy_food_name:match('production')
+                        or easy_food_name:match('gleba')
+                        or easy_food_name:match('chemical')
+                        or easy_food_name:match('military')))
                     or easy_food_name:match(dropdown_science.get_item(dropdown_science.selected_index))
                 then
                     if

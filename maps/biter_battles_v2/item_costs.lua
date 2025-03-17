@@ -34,9 +34,16 @@ ItemCosts.raw_costs = {
     ['crude-oil'] = { cost = 2, crafting_time = 0.1 / 0.8, icon = '[fluid=crude-oil]' },
     ['water'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
 
+    --space
+    ['ice'] = { cost = 1, crafting_time = 2, icon = '[item=ice]' },
+
     --gleba
     ['jelly'] = { cost = 7, crafting_time = 1, icon = '[item=jelly]' },
     ['yumako-mash'] = { cost = 14, crafting_time = 1, icon = '[item=yumako-mash]' },
+
+    --vulcanus
+    ['tungsten-ore'] = { cost = 20, crafting_time = 5, icon = '[item=tungsten-ore]' },
+    ['calcite'] = { cost = 1, crafting_time = 2, icon = '[item=calcite]' },
 
     --fulgora
     ['holmium-ore'] = { cost = 15, crafting_time = 1 / 1200, icon = '[item=holmium-ore]' },
@@ -52,9 +59,6 @@ ItemCosts.raw_costs = {
     ['fluoroketone-cold'] = { cost = 0, crafting_time = 2, icon = '[fluid=water]' },
     ['lithium-brine'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
     ['ammonia'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=ammonia]' },
-    ['tungsten-ore'] = { cost = 0, crafting_time = 5, icon = '[item=tungsten-ore]' },
-    ['calcite'] = { cost = 0, crafting_time = 2, icon = '[item=calcite]' },
-    ['ice'] = { cost = 0, crafting_time = 2, icon = '[item=ice]' },
     ['iron-bacteria'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
     ['copper-bacteria'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
     ['nutrients'] = { cost = 0, crafting_time = 1 / 1200, icon = '[fluid=water]' },
