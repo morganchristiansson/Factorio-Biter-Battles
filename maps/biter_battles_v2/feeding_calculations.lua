@@ -179,7 +179,7 @@ function Public.calc_send_command(
                 if v == 'aquilo' or starts_with(v, 'cr') then
                     v = 'cryogenic-science-pack'
                 end
-                if v == 'promethium' or v == 'dark' or starts_with(v, 'pr') then
+                if starts_with(v, 'pr') or v == 'dark' then
                     v = 'promethium-science-pack'
                 end
                 local values = Tables.food_values[v]
