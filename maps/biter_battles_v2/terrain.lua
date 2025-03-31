@@ -7,7 +7,6 @@ local noise = require('maps.biter_battles_v2.predefined_noise')
 local AiTargets = require('maps.biter_battles_v2.ai_targets')
 local tables = require('maps.biter_battles_v2.tables')
 local session = require('utils.datastore.session_data')
-local biter_texture = require('maps.biter_battles_v2.precomputed.biter_texture')
 local river = require('maps.biter_battles_v2.precomputed.river')
 
 local ai_targets_start_tracking = AiTargets.start_tracking
@@ -37,29 +36,14 @@ function amp_sum(octaves)
     return result
 end
 
-local biter_area_border_noise = noise.biter_area_border
-local biter_area_border_noise_amp_sum = amp_sum(biter_area_border_noise)
-
 local spawn_wall_noise = noise.spawn_wall
 local spawn_wall_noise_amp_sum = amp_sum(spawn_wall_noise)
 
 local spawn_wall_2_noise = noise.spawn_wall_2
 local spawn_wall_2_noise_amp_sum = amp_sum(spawn_wall_2_noise)
 
-local biter_texture_width = biter_texture.width
-local biter_texture_height = biter_texture.height
-local biter_texture_grid = biter_texture.grid
-local biter_texture_map = biter_texture.map
-
 local river_offset = river.offset
 local river_size = river.size
-
--- pre-map
-for x = 1, biter_texture_width do
-    for y = 1, biter_texture_height do
-        biter_texture_grid[x][y] = biter_texture_map[biter_texture_grid[x][y]]
-    end
-end
 
 -- avoid allocations to improve performance and maybe reduce gc lag
 local preallocated_out_of_map_tiles = {}
@@ -142,7 +126,6 @@ function Public.adjust_map_gen_settings(map_gen_settings)
     ac['crude-oil'] = { frequency = 8, size = 1.4, richness = 0.45 }
     ac['water'] = { frequency = 10, size = 0.3 }
     ac['trees'] = { frequency = 0.65, size = 0.04 }
-    ac['enemy-base'] = { frequency = 0, size = 0, richness = 0 }
     --ac['gleba_plants'] = { frequency = 6, size = 6, richness = 6 }
     ac['gleba_water'] = { frequency = 2, size = 0.02, richness = 1 }
     ac['ammonia_ocean'] = { frequency = 1, size = 0.7, richness = 1 }
@@ -518,139 +501,6 @@ local function is_biter_area(seed, x, y)
     return biter_area_noise_test(x, y, seed, a)
 end
 
-local function populate_biter_area(surface, chunk_pos, rng, is_biter_area_chunk)
-    local spitter_spawner_template = { name = 'spitter-spawner', position = { 0, 0 }, force = 'north_biters' }
-    local biter_spawner_template = { name = 'biter-spawner', position = { 0, 0 }, force = 'north_biters' }
-    local worm_turret_template = { name = '', position = { 0, 0 }, force = 'north_biters' }
-
-    local left_top_x = chunk_pos.x * 32
-    local left_top_y = chunk_pos.y * 32
-    local seed = surface.map_gen_settings.seed
-    local unit_spawners = storage.unit_spawners
-
-    local can_place_entity = surface.can_place_entity
-    local create_entity = surface.create_entity
-
-    for _ = 1, 4 do
-        local v = chunk_tile_vectors[rng(1, size_of_chunk_tile_vectors)]
-        local x, y = left_top_x + v[1], left_top_y + v[2]
-        spitter_spawner_template.position[1], spitter_spawner_template.position[2] = x, y
-        if (is_biter_area_chunk or is_biter_area(seed, x, y)) and can_place_entity(spitter_spawner_template) then
-            local e
-            if rng(1, 4) == 1 then
-                e = create_entity(spitter_spawner_template)
-            else
-                biter_spawner_template.position[1], biter_spawner_template.position[2] = x, y
-                e = create_entity(biter_spawner_template)
-            end
-            table_insert(unit_spawners[e.force.name], e)
-        end
-    end
-
-    local e = (math_abs(left_top_y) - bb_config_bitera_area_distance) * 0.0015
-    for _ = 1, rng(5, 10), 1 do
-        local v = chunk_tile_vectors[rng(1, size_of_chunk_tile_vectors)]
-        local x, y = left_top_x + v[1], left_top_y + v[2]
-        worm_turret_template.name = biter_raffle_roll('worm', e)
-        worm_turret_template.position[1], worm_turret_template.position[2] = x, y
-        if (is_biter_area_chunk or is_biter_area(seed, x, y)) and can_place_entity(worm_turret_template) then
-            create_entity(worm_turret_template)
-        end
-    end
-end
-
----@param seed uint
----@param x number
----@param y number
----@return any out_of_map_tile, any tile # returns params for `set_tile`
-local function get_biter_area_tile(seed, x, y)
-    -- Maps the relative x/y position into biter_texture with pre-computed 2D grid.
-    -- The value from the grid is then mapped into tile name.
-    -- + 1, because lua has 1-based indices
-    local grid_p_x = ((x + seed) % biter_texture_width) + 1
-    local grid_p_y = ((y + seed) % biter_texture_height) + 1
-    local name = biter_texture_grid[grid_p_x][grid_p_y]
-
-    local out_of_map = preallocated_out_of_map_tiles[next_preallocated_tile]
-    local tile = preallocated_tiles[next_preallocated_tile]
-    next_preallocated_tile = (next_preallocated_tile % (32 * 32)) + 1
-
-    out_of_map.position[1], out_of_map.position[2] = x, y
-    tile.position[1], tile.position[2] = x, y
-    tile.name = name
-    return out_of_map, tile
-end
-
----@param surface LuaSurface
----@param chunk_pos {x: number, y: number}
----@param rng LuaRandomGenerator
-local function generate_biter_area_border(surface, chunk_pos, rng)
-    local bitera_area_distance = bb_config.bitera_area_distance * -1
-    local left_top_x = chunk_pos.x * 32
-    local left_top_y = chunk_pos.y * 32
-    local seed = surface.map_gen_settings.seed
-
-    local out_of_map = {}
-    local tiles = {}
-    local i = 1
-
-    -- fill vertically strip by strip, dividing into biter_area/transitional/ordinary parts
-    for x = left_top_x, left_top_x + 32 - 1 do
-        local a = bitera_area_distance - math_abs(x) * bb_config_biter_area_slope
-
-        local transitional_area_start = math_ceil(a - 70)
-        local transitional_area_end = math_floor(a + 70)
-
-        local biter_area_end = math_min(left_top_y + 32 - 1, transitional_area_start - 1)
-        local ordinary_start = math_max(transitional_area_end + 1, left_top_y)
-        transitional_area_start = math_max(transitional_area_start, left_top_y)
-        transitional_area_end = math_min(left_top_y + 32 - 1, transitional_area_end)
-
-        for y = left_top_y, biter_area_end do
-            out_of_map[i], tiles[i] = get_biter_area_tile(seed, x, y)
-            i = i + 1
-        end
-
-        for y = transitional_area_start, transitional_area_end do
-            local is_biter_area = biter_area_noise_test(x, y, seed, a)
-            if is_biter_area then
-                out_of_map[i], tiles[i] = get_biter_area_tile(seed, x, y)
-                i = i + 1
-            end
-        end
-    end
-
-    surface.set_tiles(out_of_map, false)
-    surface.set_tiles(tiles, true)
-
-    populate_biter_area(surface, chunk_pos, rng, false)
-end
-
----@param surface LuaSurface
----@param chunk_pos {x: number, y: number}
----@param rng LuaRandomGenerator
-local function generate_biter_area(surface, chunk_pos, rng)
-    local left_top_x = chunk_pos.x * 32
-    local left_top_y = chunk_pos.y * 32
-    local seed = surface.map_gen_settings.seed
-
-    local out_of_map = chunk_buffer
-    local tiles = chunk_buffer2
-    local i = 1
-
-    for y = left_top_y, left_top_y + 32 - 1 do
-        for x = left_top_x, left_top_x + 32 - 1 do
-            out_of_map[i], tiles[i] = get_biter_area_tile(seed, x, y)
-            i = i + 1
-        end
-    end
-
-    surface.set_tiles(out_of_map, false)
-    surface.set_tiles(tiles, true)
-
-    populate_biter_area(surface, chunk_pos, rng, true)
-end
-
 -- this will enable collection of chunk generation profiling statistics, chart huge area around the map origin
 -- and enable `chunk-profiling-stats` command to retrieve the statistics
 local ENABLE_CHUNK_GEN_PROFILING = false
@@ -729,10 +579,6 @@ function Public.generate(event)
     local chunk_variant = chunk_type_at(chunk_pos)
     if chunk_variant == chunk_type.river then
         generate_river(surface, chunk_pos, rng)
-    elseif chunk_variant == chunk_type.biter_area_border then
-        generate_biter_area_border(surface, chunk_pos, rng)
-    elseif chunk_variant == chunk_type.biter_area then
-        generate_biter_area(surface, chunk_pos, rng)
     end
 
     if profiler then
