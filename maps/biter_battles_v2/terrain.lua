@@ -7,7 +7,6 @@ local noise = require('maps.biter_battles_v2.predefined_noise')
 local AiTargets = require('maps.biter_battles_v2.ai_targets')
 local tables = require('maps.biter_battles_v2.tables')
 local session = require('utils.datastore.session_data')
-local river = require('maps.biter_battles_v2.precomputed.river')
 
 local ai_targets_start_tracking = AiTargets.start_tracking
 local bb_config_bitera_area_distance = bb_config.bitera_area_distance
@@ -42,8 +41,7 @@ local spawn_wall_noise_amp_sum = amp_sum(spawn_wall_noise)
 local spawn_wall_2_noise = noise.spawn_wall_2
 local spawn_wall_2_noise_amp_sum = amp_sum(spawn_wall_2_noise)
 
-local river_offset = river.offset
-local river_size = river.size
+local river_size = 4096
 
 -- avoid allocations to improve performance and maybe reduce gc lag
 local preallocated_out_of_map_tiles = {}
@@ -249,8 +247,7 @@ local function river_start(seed, x, include_spawn_circle)
     -- Offset contains coefficient in a range between [0, 4]. Select it
     -- from pre-computed table. Position X coordinate is used to determinate
     -- which offset is selected.
-    local offset = river_offset[(x + seed) % river_size]
-    local start = -river_width_half - offset
+    local start = -river_width_half
 
     if include_spawn_circle then
         local circle_y_intersection = tile_near_column_with_origin_circle_intersection(x, river_circle_size)
@@ -413,55 +410,6 @@ local function generate_starting_area(surface, chunk_pos, rng)
     surface.set_tiles(concrete, true)
 end
 
----@param surface LuaSurface
----@param chunk_pos {x: number, y: number}
----@param rng LuaRandomGenerator
-local function generate_river(surface, chunk_pos, rng)
-    local fish_template = { name = 'fish', position = { 0.5, 0.5 } }
-
-    local chunk_pos_x = chunk_pos.x
-    local chunk_pos_y = chunk_pos.y
-    local left_top_x = chunk_pos.x * 32
-    local left_top_y = chunk_pos.y * 32
-    local seed = surface.map_gen_settings.seed
-    local in_spawn_river_circle_bbox = chunk_pos.x >= -2 and chunk_pos.x < 2
-    local create_entity = surface.create_entity
-
-    local tiles = {}
-    local i = 1
-
-    -- fill vertically strip by strip, dividing into river/ordinary/spec_island parts
-    for x = left_top_x, left_top_x + 32 - 1 do
-        local river_border_start_y = river_start(seed, x, in_spawn_river_circle_bbox)
-        river_border_start_y = math_max(river_border_start_y, left_top_y)
-
-        local river_border_end_y = left_top_y + 32 - 1
-        local is_spec_island_chunk = (chunk_pos_x == -1 or chunk_pos_x == 0) and chunk_pos_y == -1
-        if is_spec_island_chunk then
-            local circle_y_intersection = tile_near_column_with_origin_circle_intersection(x, spawn_island_size)
-            if circle_y_intersection then
-                local spec_island_start = math_min(river_border_end_y, circle_y_intersection)
-                river_border_end_y = spec_island_start - 1
-            end
-        end
-
-        for y = river_border_start_y, river_border_end_y do
-            local tile = preallocated_tiles[next_preallocated_tile]
-            next_preallocated_tile = (next_preallocated_tile % (32 * 32)) + 1
-
-            tile.name = 'deepwater'
-            tile.position[1], tile.position[2] = x, y
-            tiles[i] = tile
-            i = i + 1
-            if rng(1, 64) == 1 then
-                fish_template.position[1], fish_template.position[2] = x + 0.5, y + 0.5
-                create_entity(fish_template)
-            end
-        end
-    end
-    surface.set_tiles(tiles)
-end
-
 local scrap_vectors = {}
 for x = -8, 8, 1 do
     for y = -8, 8, 1 do
@@ -569,25 +517,6 @@ local function create_rng_for_chunk(chunk_pos, seed)
     return game.create_random_generator((chunk_pos.x * 374761393 + chunk_pos.y * 668265263 + seed) % 4294967296)
 end
 
-function Public.generate(event)
-    local profiler = chunk_profiling and helpers.create_profiler(false)
-
-    local surface = event.surface
-    local chunk_pos = event.position
-    local rng = create_rng_for_chunk(chunk_pos, surface.map_gen_settings.seed)
-
-    local chunk_variant = chunk_type_at(chunk_pos)
-    if chunk_variant == chunk_type.river then
-        generate_river(surface, chunk_pos, rng)
-    end
-
-    if profiler then
-        profiler.stop()
-        chunk_profiling.all.add_record(profiler)
-        chunk_profiling.per_chunk_type[chunk_variant].add_record(profiler)
-    end
-end
-
 local function draw_spawn_island(surface)
     local tiles = {}
     for x = math_floor(spawn_island_size) * -1, -1, 1 do
@@ -681,19 +610,6 @@ local function draw_spawn_area(surface, rng)
 
     surface.destroy_decoratives({})
     surface.regenerate_decorative()
-end
-
-local water_barrier = {}
-for i = 1, 32 do
-    water_barrier[i] = { name = 'deepwater', position = { 0, 0 } }
-end
-
-function Public.draw_water_for_river_ends(surface, chunk_pos)
-    local left_top_x = chunk_pos.x * 32
-    for x = 0, 32 - 1 do
-        water_barrier[x + 1].position[1] = left_top_x + x
-    end
-    surface.set_tiles(water_barrier)
 end
 
 local function _clear_resources(surface, area)

@@ -595,31 +595,6 @@ local function on_player_built_tile(event)
     end
 end
 
-local function on_chunk_generated(event)
-    local surface = event.surface
-
-    -- Check if we're out of init.
-    if not surface or not surface.valid then
-        return
-    end
-
-    -- Necessary check to ignore nauvis surface.
-    if surface.name ~= storage.bb_surface_name then
-        return
-    end
-
-    -- Generate structures for north only.
-    local pos = event.area.left_top
-    if pos.y < 0 then
-        Terrain.generate(event)
-    end
-
-    -- add decorations only after the south part of the island is generated
-    if event.position.y == 0 and event.position.x == 1 and storage.bb_settings['new_year_island'] then
-        Terrain.add_new_year_island_decorations(surface)
-    end
-end
-
 local function clear_corpses(cmd)
     local player = game.player
     local trusted = Session.get_trusted_table()
@@ -661,7 +636,6 @@ end
 
 local Event = require('utils.event')
 Event.add(defines.events.on_built_entity, on_built_entity)
-Event.add(defines.events.on_chunk_generated, on_chunk_generated)
 Event.add(defines.events.on_console_chat, on_console_chat)
 Event.add(defines.events.on_console_command, on_console_command)
 Event.add(defines.events.on_entity_died, on_entity_died)
