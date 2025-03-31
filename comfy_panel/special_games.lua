@@ -13,7 +13,6 @@ local valid_special_games = {
     disabled_entities = require('comfy_panel.special_games.disabled_entities'),
     shared_science_throw = require('comfy_panel.special_games.shared_science_throw'),
     limited_lives = require('comfy_panel.special_games.limited_lives'),
-    mixed_ore_map = require('comfy_panel.special_games.mixed_ore_map'),
     disable_sciences = require('comfy_panel.special_games.disable_sciences'),
     send_to_external_server = require('comfy_panel.special_games.send_to_external_server'),
     captain = require('comfy_panel.special_games.captain'),

@@ -2,7 +2,6 @@ local Public = {}
 local LootRaffle = require('functions.loot_raffle')
 local BiterRaffle = require('maps.biter_battles_v2.biter_raffle')
 local bb_config = require('maps.biter_battles_v2.config')
-local mixed_ore_map_special = require('maps.biter_battles_v2.mixed_ore_map_special')
 local multi_octave_noise = require('utils.multi_octave_noise')
 local noise = require('maps.biter_battles_v2.predefined_noise')
 local AiTargets = require('maps.biter_battles_v2.ai_targets')
@@ -15,7 +14,6 @@ local ai_targets_start_tracking = AiTargets.start_tracking
 local bb_config_bitera_area_distance = bb_config.bitera_area_distance
 local bb_config_biter_area_slope = bb_config.biter_area_slope
 local biter_raffle_roll = BiterRaffle.roll
-local spawn_ore = tables.spawn_ore
 local table_insert = table.insert
 local table_remove = table.remove
 local math_abs = math.abs
@@ -42,17 +40,11 @@ end
 local biter_area_border_noise = noise.biter_area_border
 local biter_area_border_noise_amp_sum = amp_sum(biter_area_border_noise)
 
-local mixed_ore_noise = noise.mixed_ore
-local mixed_ore_noise_amp_sum = 1.0 -- normalized
-
 local spawn_wall_noise = noise.spawn_wall
 local spawn_wall_noise_amp_sum = amp_sum(spawn_wall_noise)
 
 local spawn_wall_2_noise = noise.spawn_wall_2
 local spawn_wall_2_noise_amp_sum = amp_sum(spawn_wall_2_noise)
-
-local spawn_ore_noise = noise.spawn_ore
-local spawn_ore_noise_amp_sum = amp_sum(spawn_ore_noise)
 
 local biter_texture_width = biter_texture.width
 local biter_texture_height = biter_texture.height
@@ -86,25 +78,6 @@ local river_width_half = math_floor(bb_config.border_river_width * 0.5)
 -- max value 32
 local spawn_island_size = 9
 
-local ores = {
-    'iron-ore',
-    'copper-ore',
-    'iron-ore',
-    'stone',
-    'copper-ore',
-    'iron-ore',
-    'copper-ore',
-    'iron-ore',
-    'coal',
-    'iron-ore',
-    'copper-ore',
-    'iron-ore',
-    'stone',
-    'copper-ore',
-    'coal',
-}
--- mixed_ore_multiplier order is based on the ores variable
-local mixed_ore_multiplier = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
 local rocks = { 'huge-rock', 'big-rock', 'big-rock', 'big-rock', 'big-sand-rock' }
 
 -- 32 * 32 buffers
@@ -173,7 +146,6 @@ function Public.adjust_map_gen_settings(map_gen_settings)
     --ac['gleba_plants'] = { frequency = 6, size = 6, richness = 6 }
     ac['gleba_water'] = { frequency = 2, size = 0.02, richness = 1 }
     ac['ammonia_ocean'] = { frequency = 1, size = 0.7, richness = 1 }
-    mixed_ore_map_special.adjust_map_gen_settings(map_gen_settings)
 end
 
 ---@enum area_intersection
@@ -229,55 +201,6 @@ function chunk_type_at(chunk_pos)
         return chunk_type.biter_area_border
     else
         return chunk_type.biter_area
-    end
-end
-
-local function draw_noise_ore_patch(x, y, name, surface, radius, richness)
-    local ore_template = { name = 'iron-ore', position = { 0, 0 }, amount = 1 }
-    local remove_structures_template = { position = { 0, 0 }, name = { 'wooden-chest', 'stone-wall', 'gun-turret' } }
-
-    local seed = surface.map_gen_settings.seed
-    local can_place_entity = surface.can_place_entity
-    local create_entity = surface.create_entity
-    local find_entities_filtered = surface.find_entities_filtered
-
-    local richness_part = richness / radius
-    for dy = radius * -3, radius * 3, 1 do
-        for dx = radius * -3, radius * 3, 1 do
-            local distance_to_center = math_sqrt(dx ^ 2 + dy ^ 2)
-            local amount = richness - richness_part * distance_to_center
-            if amount > 1 then
-                local ore_x, ore_y = x + dx, y + dy
-
-                -- old equation
-                -- distance_to_center < radius - math_abs(noise * radius * 0.85)
-                local bound = (radius - distance_to_center) / (radius * 0.85)
-                local noise = get_noise_between_bounds(
-                    spawn_ore_noise,
-                    spawn_ore_noise_amp_sum,
-                    ore_x,
-                    ore_y,
-                    seed,
-                    25000,
-                    -bound,
-                    bound
-                )
-
-                if noise then
-                    local pos = { ore_x, ore_y }
-                    ore_template.position = pos
-                    ore_template.name = name
-                    ore_template.amount = amount
-                    if can_place_entity(ore_template) then
-                        create_entity(ore_template)
-                        remove_structures_template.position = pos
-                        for _, e in pairs(find_entities_filtered(remove_structures_template)) do
-                            e.destroy()
-                        end
-                    end
-                end
-            end
-        end
     end
 end
 
@@ -361,66 +284,6 @@ local function is_outside_spawn(chunk_pos)
     return chunk_pos.x < -5 or chunk_pos.x >= 5 or chunk_pos.y < -5
 end
 
-local ore_template = { name = 'iron-ore', position = { 0, 0 }, amount = 1 }
-
----@param can_place_entity fun(LuaSurface.can_place_entity_param): boolean
----@param create_entity fun(LuaSurface.create_entity_param): LuaEntity?
----@param seed uint
----@param x number
----@param y number
----@param rng LuaRandomGenerator
-local function generate_ordinary_tile(can_place_entity, create_entity, seed, x, y, rng)
-    local noise = get_lower_bounded_noise(mixed_ore_noise, mixed_ore_noise_amp_sum, x, y, seed, 10000, 0.6)
-    if noise then
-        ore_template.position[1], ore_template.position[2] = x, y
-        ore_template.name = 'iron-ore'
-        ore_template.amount = 1
-        if can_place_entity(ore_template) then
-            local i = math_floor(noise * 25 + math_abs(x) * 0.05) % 15 + 1
-            local amount = (rng(800, 1000) + math_sqrt(x ^ 2 + y ^ 2) * 3) * mixed_ore_multiplier[i]
-            ore_template.name = ores[i]
-            ore_template.amount = amount
-            create_entity(ore_template)
-        end
-    end
-end
-
-local impactful_mixed_ore_noise = { mixed_ore_noise[1] }
-
-local function chunk_noise_hint(seed, chunk_pos)
-    local mid_x, mid_y = chunk_pos.x * 32 + 16, chunk_pos.y * 32 + 16
-    return get_noise(impactful_mixed_ore_noise, mid_x, mid_y, seed, 10000)
-end
-
--- calculate_chunk_has_ore_hint()
--- local chunk_has_ore_hint = -0.081660016785248 -- way too conservative
-local chunk_has_ore_hint = 0.16
-
----@param surface LuaSurface
----@param chunk_pos {x: number, y: number}
----@return fun(x: number, y: number, rng: LuaRandomGenerator)?
-local function get_tile_generator(surface, chunk_pos)
-    local special_gen = mixed_ore_map_special.get_tile_generator(surface, chunk_pos)
-    local suppress_tile_gen = special_gen == false
-    if suppress_tile_gen then
-        return nil
-    elseif special_gen ~= nil then
-        return special_gen ---@type fun(x: number, y: number, rng: LuaRandomGenerator)
-    end
-    if not is_outside_spawn(chunk_pos) then
-        return nil
-    end
-    local seed = surface.map_gen_settings.seed
-    if chunk_noise_hint(seed, chunk_pos) < chunk_has_ore_hint then
-        return nil
-    end
-    local can_place_entity = surface.can_place_entity
-    local create_entity = surface.create_entity
-    return function(x, y, rng)
-        generate_ordinary_tile(can_place_entity, create_entity, seed, x, y, rng)
-    end
-end
-
 local DEFAULT_HIDDEN_TILE = 'dirt-3'
 
 local spawn_wall_radius = 116
@@ -446,7 +309,6 @@ local function generate_starting_area(surface, chunk_pos, rng)
     local left_top_y = chunk_pos.y * 32
     local is_river_chunk = chunk_type_at(chunk_pos) == chunk_type.river
     local in_spawn_river_circle_bb = in_spawn_river_circle_bbox(chunk_pos)
-    local mixed_ore_map_special_active = storage.active_special_games['mixed_ore_map']
     local can_place_entity = surface.can_place_entity
     local create_entity = surface.create_entity
     local get_tile = surface.get_tile
@@ -511,7 +373,7 @@ local function generate_starting_area(surface, chunk_pos, rng)
             coal_template.position = pos
             if
                 not can_place_entity(wooden_chest_template)
-                or (not mixed_ore_map_special_active and not can_place_entity(coal_template))
+                or not can_place_entity(coal_template)
             then
                 goto continue
             end
@@ -565,13 +427,6 @@ local function generate_starting_area(surface, chunk_pos, rng)
     end
 
     surface.set_tiles(concrete_foundation, false)
-    local tile_gen = get_tile_generator(surface, chunk_pos)
-    if tile_gen then
-        for _, filler in pairs(concrete_foundation) do
-            local pos = filler.position
-            tile_gen(pos[1], pos[2], rng)
-        end
-    end
     surface.set_tiles(concrete, true)
 end
 
@@ -588,7 +443,6 @@ local function generate_river(surface, chunk_pos, rng)
     local seed = surface.map_gen_settings.seed
     local in_spawn_river_circle_bbox = chunk_pos.x >= -2 and chunk_pos.x < 2
     local create_entity = surface.create_entity
-    local tile_gen = get_tile_generator(surface, chunk_pos)
 
     local tiles = {}
     local i = 1
@@ -605,12 +459,6 @@ local function generate_river(surface, chunk_pos, rng)
             if circle_y_intersection then
                 local spec_island_start = math_min(river_border_end_y, circle_y_intersection)
                 river_border_end_y = spec_island_start - 1
-            end
-        end
-
-        if tile_gen then
-            for y = left_top_y, river_border_start_y - 1 do
-                tile_gen(x, y, rng)
             end
         end
 
@@ -741,7 +589,6 @@ local function generate_biter_area_border(surface, chunk_pos, rng)
     local left_top_x = chunk_pos.x * 32
     local left_top_y = chunk_pos.y * 32
     local seed = surface.map_gen_settings.seed
-    local tile_gen = get_tile_generator(surface, chunk_pos)
 
     local out_of_map = {}
     local tiles = {}
@@ -769,14 +616,6 @@ local function generate_biter_area_border(surface, chunk_pos, rng)
             if is_biter_area then
                 out_of_map[i], tiles[i] = get_biter_area_tile(seed, x, y)
                 i = i + 1
-            elseif tile_gen then
-                tile_gen(x, y, rng)
-            end
-        end
-
-        if tile_gen then
-            for y = ordinary_start, left_top_y + 32 - 1 do
-                tile_gen(x, y, rng)
             end
         end
     end
@@ -812,50 +651,12 @@ local function generate_biter_area(surface, chunk_pos, rng)
     populate_biter_area(surface, chunk_pos, rng, true)
 end
 
----@param surface LuaSurface
----@param chunk_pos {x: number, y: number}
----@param rng LuaRandomGenerator
-local function generate_ordinary(surface, chunk_pos, rng)
-    local tile_gen = get_tile_generator(surface, chunk_pos)
-    if not tile_gen then
-        return
-    end
-
-    local left_top_x = chunk_pos.x * 32
-    local left_top_y = chunk_pos.y * 32
-
-    for y = left_top_y, left_top_y + 32 - 1 do
-        for x = left_top_x, left_top_x + 32 - 1 do
-            tile_gen(x, y, rng)
-        end
-    end
-end
-
 -- this will enable collection of chunk generation profiling statistics, chart huge area around the map origin
 -- and enable `chunk-profiling-stats` command to retrieve the statistics
 local ENABLE_CHUNK_GEN_PROFILING = false
 
 local chunk_profiling = nil
 if ENABLE_CHUNK_GEN_PROFILING then
-    local function enabled_mixed_ore_map_special(type, size)
-        storage.active_special_games['mixed_ore_map'] = true
-        if not size then
-            if type == 1 then -- mixed ores
-                size = 9
-            elseif type == 2 then -- checkerboard, 3 - vertical lines
-                size = 5
-            elseif type == 4 then -- mixed patches
-                size = 4
-            elseif type == 5 then -- dots
-                size = 7
-            end
-        end
-        storage.special_games_variables['mixed_ore_map'] = { type = type, size = size }
-    end
-
-    -- you can uncomment this to test mixed ore map special performance
-    -- enabled_mixed_ore_map_special(4, 4)
-
     local profile_stats = require('utils.profiler_stats')
     local event = require('utils.event')
     local token = require('utils.token')
@@ -928,8 +729,6 @@ function Public.generate(event)
     local chunk_variant = chunk_type_at(chunk_pos)
     if chunk_variant == chunk_type.river then
         generate_river(surface, chunk_pos, rng)
-    elseif chunk_variant == chunk_type.ordinary then
-        generate_ordinary(surface, chunk_pos, rng)
     elseif chunk_variant == chunk_type.biter_area_border then
         generate_biter_area_border(surface, chunk_pos, rng)
     elseif chunk_variant == chunk_type.biter_area then
@@ -1051,19 +850,6 @@ function Public.draw_water_for_river_ends(surface, chunk_pos)
     surface.set_tiles(water_barrier)
 end
 
-local function draw_grid_ore_patch(count, grid, name, surface, size, density, rng)
-    -- Takes a random left_top coordinate from grid, removes it and draws
-    -- ore patch on top of it. Grid is held by reference, so this function
-    -- is reentrant.
-    for i = 1, count, 1 do
-        local idx = rng(1, #grid)
-        local pos = grid[idx]
-        table_remove(grid, idx)
-
-        draw_noise_ore_patch(pos[1], pos[2], name, surface, size, density)
-    end
-end
-
 local function _clear_resources(surface, area)
     local resources = surface.find_entities_filtered({
         area = area,
@@ -1077,66 +863,6 @@ local function _clear_resources(surface, area)
     end
 
     return i
-end
-
-local function clear_ore_in_main(surface)
-    local area = {
-        left_top = { -150, -150 },
-        right_bottom = { 150, 0 },
-    }
-    local limit = 20
-    local cnt = 0
-    repeat
-        -- Keep clearing resources until there is none.
-        -- Each cycle increases search area.
-        cnt = _clear_resources(surface, area)
-        limit = limit - 1
-        area.left_top[1] = area.left_top[1] - 5
-        area.left_top[2] = area.left_top[2] - 5
-        area.right_bottom[1] = area.right_bottom[1] + 5
-    until cnt == 0 or limit == 0
-
-    if limit == 0 then
-        log('Limit reached, some ores might be truncated in spawn area')
-        log('If this is a custom build, remove a call to clear_ore_in_main')
-        log('If this in a standard value, limit could be tweaked')
-    end
-end
-
-local function generate_spawn_ore(surface, rng)
-    -- This array holds indices of chunks onto which we desire to
-    -- generate ore patches. It is visually representing north spawn
-    -- area. One element was removed on purpose - we don't want to
-    -- draw ore in the lake which overlaps with chunk [0,-1]. All ores
-    -- will be mirrored to south.
-    local grid = {
-        { -2, -3 },
-        { -1, -3 },
-        { 0, -3 },
-        { 1, -3 },
-        { 2, -3 },
-        { -2, -2 },
-        { -1, -2 },
-        { 0, -2 },
-        { 1, -2 },
-        { 2, -2 },
-        { -2, -1 },
-        { -1, -1 },
-        { 1, -1 },
-        { 2, -1 },
-    }
-
-    -- Calculate left_top position of a chunk. It will be used as origin
-    -- for ore drawing. Reassigns new coordinates to the grid.
-    for i, _ in ipairs(grid) do
-        grid[i][1] = grid[i][1] * 32 + rng(-12, 12)
-        grid[i][2] = grid[i][2] * 32 + rng(-24, -1)
-    end
-
-    for name, props in pairs(spawn_ore) do
-        draw_grid_ore_patch(props.big_patches, grid, name, surface, props.size, props.density, rng)
-        draw_grid_ore_patch(props.small_patches, grid, name, surface, props.size / 2, props.density, rng)
-    end
 end
 
 local function generate_additional_rocks(surface, rng)
@@ -1212,10 +938,6 @@ function Public.generate_initial_structures(surface)
     force_spawn_chunks_generation(surface, false)
     local rng = create_rng_for_chunk({ x = 1, y = 1 }, surface.map_gen_settings.seed)
     draw_spawn_area(surface, rng)
-    if not storage.active_special_games['mixed_ore_map'] then
-        clear_ore_in_main(surface)
-        generate_spawn_ore(surface, rng)
-    end
     generate_additional_rocks(surface, rng)
     generate_silo(surface, rng)
     draw_spawn_island(surface)

@@ -104,47 +104,6 @@ Public.food_long_to_short = {
     ['cryogenic-science-pack'] = { short_name = 'aquilo', indexScience = 11 },
 }
 
--- This array contains parameters for spawn area ore patches.
--- These are non-standard units and they do not map to values used in factorio
--- map generation. They are only used internally by scenario logic.
-Public.spawn_ore = {
-    -- Value "size" is a parameter used as coefficient for simplex noise
-    -- function that is applied to shape of an ore patch. You can think of it
-    -- as size of a patch on average. Recomended range is from 1 up to 50.
-
-    -- Value "density" controls the amount of resource in a single tile.
-    -- The center of an ore patch contains specified amount and is decreased
-    -- proportionally to distance from center of the patch.
-
-    -- Value "big_patches" and "small_patches" represents a number of an ore
-    -- patches of given type. The "density" is applied with the same rule
-    -- regardless of the patch size.
-    ['iron-ore'] = {
-        size = 23,
-        density = 3500,
-        big_patches = 2,
-        small_patches = 1,
-    },
-    ['copper-ore'] = {
-        size = 21,
-        density = 3000,
-        big_patches = 1,
-        small_patches = 2,
-    },
-    ['coal'] = {
-        size = 22,
-        density = 2500,
-        big_patches = 1,
-        small_patches = 1,
-    },
-    ['stone'] = {
-        size = 20,
-        density = 2000,
-        big_patches = 1,
-        small_patches = 0,
-    },
-}
-
 Public.difficulties = {
     [1] = {
         name = "I'm Too Young to Die",
