@@ -1,5 +1,15 @@
 local Color = require('utils.color_presets')
 
+---@param force LuaForce
+---@param item string
+local function disable_recycling(force, item)
+    local name = item.name or item
+    local recipe = force.recipes[name .. '-recycling']
+    if recipe then
+        recipe.enabled = false
+    end
+end
+
 local function generate_infinity_chest(separate_chests, operable, gap, eq)
     local surface = game.surfaces[storage.bb_surface_name]
     local position_0 = { x = 0, y = -42 }
@@ -28,8 +38,12 @@ local function generate_infinity_chest(separate_chests, operable, gap, eq)
         chest.destructible = false
         for i, v in ipairs(eq) do
             chest.set_infinity_container_filter(i, { name = v, index = i, count = prototypes.item[v].stack_size })
+            disable_recycling(game.forces.north, v)
+            disable_recycling(game.forces.south, v)
         end
-        chest.clone({ position = { position_0.x, -position_0.y } })
+        local position_1 ={ position_0.x, -position_0.y }
+        local clone = chest.clone({ position = position_1 })
+        clone.teleport(position_1)
     elseif separate_chests == 'right' then
         local k = gap + 1
         for i, v in ipairs(eq) do
@@ -43,9 +57,13 @@ local function generate_infinity_chest(separate_chests, operable, gap, eq)
             chest.operable = operable
             chest.destructible = false
             chest.set_infinity_container_filter(i, { name = v, index = i, count = prototypes.item[v].stack_size })
-            chest.clone({ position = { position_0.x, -position_0.y } })
+            local position_1 ={ position_0.x, -position_0.y }
+            local clone = chest.clone({ position = position_1 })
+            clone.teleport(position_1)
             position_0.x = position_0.x + (i * k)
             k = k * -1
+            disable_recycling(game.forces.north, v)
+            disable_recycling(game.forces.south, v)
         end
     end
     storage.active_special_games['infinity_chest'] = true

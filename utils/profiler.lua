@@ -10,7 +10,7 @@ local player_autostop = 60 * 10 -- 10 s
 local ignoredFunctions = {}
 
 local Profiler = {
-    --	Call
+    --  Call
     CallTree = nil,
     IsRunning = false,
     AutoStopTick = nil,
@@ -69,10 +69,10 @@ commands.add_command('stopProfiler', 'Stops profiling', stopCommand)
 
 --local assert_raw = assert
 --function assert(expr, ...)
---	if not expr then
---		Profiler.Stop(false, "Assertion failed")
---	end
---	assert_raw(expr, ...)
+--  if not expr then
+--      Profiler.Stop(false, "Assertion failed")
+--  end
+--  assert_raw(expr, ...)
 --end
 local error_raw = error
 if Profiler.isProfilingSupported() then
@@ -122,7 +122,7 @@ function Profiler.Start(excludeCalledMs, admin, tick)
         next = {},
     }
 
-    --	Array of Call
+    --  Array of Call
     local stack = { [0] = Profiler.CallTree }
     local stack_count = 0
 

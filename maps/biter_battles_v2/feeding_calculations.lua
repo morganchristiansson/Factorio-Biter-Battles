@@ -2,73 +2,69 @@ local Tables = require('maps.biter_battles_v2.tables')
 local bb_config = require('maps.biter_battles_v2.config')
 
 local math_floor = math.floor
+local math_min = math.min
+local math_sqrt = math.sqrt
 
 local Public = {}
-
----@param current_player_count integer
----@return number
-local function get_instant_threat_player_count_modifier(current_player_count)
-    local minimum_modifier = 125
-    local maximum_modifier = 250
-    local player_amount_for_maximum_threat_gain = 20
-    local gain_per_player = (maximum_modifier - minimum_modifier) / player_amount_for_maximum_threat_gain
-    local m = minimum_modifier + gain_per_player * current_player_count
-    return math.min(m, maximum_modifier)
-end
 
 ---@param initial_evo number
 ---@param food_value number
 ---@param num_flasks integer
 ---@param current_player_count integer
----@param max_reanim_thresh number Long ago, we used reanim_chance rather than health_factor, and this is the evo value at which it would sortof be 100% reanim_chance
----@return { evo_increase: number, threat_increase: number, biter_health_factor: number }
-function Public.calc_feed_effects(initial_evo, food_value, num_flasks, current_player_count, max_reanim_thresh)
-    local threat = 0
+---@return { evo_increase: number, threat_increase: number }
+function Public.calc_feed_effects(initial_evo, food, current_player_count)
     local evo = initial_evo
-    local food = food_value * num_flasks
-    local threat_scale_factor_past_evo100 = bb_config.threat_scale_factor_past_evo100
+    local player_count_modifier = 500 + 25 * math_min(current_player_count, 20)
+    local threat = food * player_count_modifier
     while food > 0 do
-        local clamped_evo = math.min(evo, 1)
-        ---SET EVOLUTION
-        local e2 = (clamped_evo * 100) + 1
-        local diminishing_modifier = (1 / (10 ^ (e2 * 0.015))) / (e2 * 0.5)
-        local amount_of_food_this_iteration
-        -- By growing by at least 1%, or exponentially by 10% of current evo, whichever is higher,
-        -- we ensure that this will run a bounded number of times, even if /calc-send is run with
-        -- very high numbers.
-        local max_evo_gain_per_iteration
         if evo < 1 then
-            max_evo_gain_per_iteration = 0.01
+            local modifier_start
+            local modifier_per_evo
+            local max_evo_this_iteration
+            if evo < 0.2 then --at 0 to 20 evo: modifier x0.14 to x0.04
+                modifier_start = 0.14
+                modifier_per_evo = -0.5
+                max_evo_this_iteration = 0.2
+            elseif evo < 0.5 then --at 20 to 50 evo: modifier x0.02 to x0.002
+                modifier_start = 0.032
+                modifier_per_evo = -0.06
+                max_evo_this_iteration = 0.5
+            else --at 50 to 100 evo: modifier x0.0015 to x0.0005
+                modifier_start = 0.0025
+                modifier_per_evo = -0.002
+                max_evo_this_iteration = 1
+            end
+            --compared to old formula
+            --to  20 evo, food needed:   2.27 -> 2.22
+            --to  50 evo, food needed:  27.17 -> 27.27
+            --to 100 evo, food needed: 418.5  -> 500
+            
+            local current_evo_modifier = modifier_per_evo * evo + modifier_start
+            local end_evo_modifier = modifier_per_evo * max_evo_this_iteration + modifier_start
+            local max_evo_gain_this_iteration = max_evo_this_iteration - evo
+            local max_food_this_iteration = 2 * max_evo_gain_this_iteration / (current_evo_modifier + end_evo_modifier)
+            
+            if food < max_food_this_iteration then
+                -- rewrite max_food_this_iteration formula:
+                -- food = (final_evo - evo) / (0.5 * modifier_per_evo * (evo + final_evo) + modifier_start)
+                -- solve for final_evo:
+                evo = (evo + (0.5 * evo * modifier_per_evo + modifier_start) * food) / (1 - 0.5 * modifier_per_evo * food)
+                break
+            else
+                evo = max_evo_this_iteration
+                food = food - max_food_this_iteration
+            end
         else
-            max_evo_gain_per_iteration = evo / 10
+            evo = evo + food * 0.0005
+            break
         end
-        amount_of_food_this_iteration = math.min(food, max_evo_gain_per_iteration / diminishing_modifier)
-        local evo_gain = (amount_of_food_this_iteration * diminishing_modifier)
-        evo = evo + evo_gain
-
-        --ADD INSTANT THREAT
-        local diminishing_modifier = 1 / (0.2 + (e2 * 0.016))
-        if evo > 1 then
-            -- Give bonus threat for sending as evo grows
-            diminishing_modifier = diminishing_modifier * (1 + (evo - 1) * threat_scale_factor_past_evo100)
-        end
-        threat = threat + (amount_of_food_this_iteration * diminishing_modifier)
-
-        food = food - amount_of_food_this_iteration
     end
-    -- Calculates reanimation chance. This value is normalized onto
-    -- maximum re-animation threshold. For example if real evolution is 150
-    -- and max is 350, then 150 / 350 = 42% chance.
-    local reanim_chance = math_floor(math.max(evo - 1.0, 0) * 100.0)
-    reanim_chance = reanim_chance / max_reanim_thresh * 100
-    reanim_chance = math.min(math_floor(reanim_chance), 90.0)
-
-    threat = threat * get_instant_threat_player_count_modifier(current_player_count)
+    
+    if evo > 2 then threat = threat * math_floor(evo * 10 - 18) end
 
     return {
         evo_increase = evo - initial_evo,
         threat_increase = threat,
-        biter_health_factor = 1 / (1 - reanim_chance / 100),
     }
 end
 
@@ -179,6 +175,9 @@ function Public.calc_send_command(
                 if v == 'aquilo' or starts_with(v, 'cr') then
                     v = 'cryogenic-science-pack'
                 end
+                if starts_with(v, 'prom') or v == 'dark' then
+                    v = 'promethium-science-pack'
+                end
                 local values = Tables.food_values[v]
                 if values == nil then
                     error_msg = 'Invalid science pack color'
@@ -250,7 +249,7 @@ function Public.calc_send_command(
         return error_msg .. help_text
     end
     local effects =
-        Public.calc_feed_effects(evo / 100, total_food * difficulty / 100, 1, player_count, max_reanim_thresh)
+        Public.calc_feed_effects(evo / 100, total_food * difficulty / 100, player_count, max_reanim_thresh)
     return string.format(
         '/calc-send %s\nevo_increase: %.1f new_evo: %.1f\nthreat_increase: %d',
         debug_command_str,

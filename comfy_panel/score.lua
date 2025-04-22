@@ -1,5 +1,6 @@
 --scoreboard by mewmew
 
+local LootRaffle = require('functions.loot_raffle')
 local Event = require('utils.event')
 local Functions = require('maps.biter_battles_v2.functions')
 local Global = require('utils.global')
@@ -22,6 +23,7 @@ local building_and_mining_blacklist = {
     ['item-entity'] = true,
 }
 
+local math_random = math.random
 local math_floor = math.floor
 local math_round = function(x)
     return math_floor(x + 0.5)
@@ -83,14 +85,38 @@ local function get_sorted_list(method, column_name, score_list)
 end
 
 local biters = {
-    'small-biter',
-    'medium-biter',
-    'big-biter',
-    'behemoth-biter',
     'small-spitter',
+    'small-biter',
     'medium-spitter',
+    'medium-biter',
     'big-spitter',
+    'big-biter',
     'behemoth-spitter',
+    'behemoth-biter',
+    'titan-spitter',
+    'titan-biter',
+    'gargantuan-spitter',
+    'gargantuan-biter',
+    'small-worm-turret',
+    'medium-worm-turret',
+    'big-worm-turret',
+    'behemoth-worm-turret',
+    'small-wriggler-pentapod',
+    'medium-wriggler-pentapod',
+    'big-wriggler-pentapod',
+    'behemoth-wriggler-pentapod',
+    'titan-wriggler-pentapod',
+    'gargantuan-wriggler-pentapod',
+    'small-strafer-pentapod',
+    'medium-strafer-pentapod',
+    'big-strafer-pentapod',
+    'behemoth-strafer-pentapod',
+    'titan-strafer-pentapod',
+    'small-stomper-pentapod',
+    'medium-stomper-pentapod',
+    'big-stomper-pentapod',
+    'behemoth-stomper-pentapod',
+    'titan-stomper-pentapod',
 }
 local function get_total_biter_killcount(force)
     local count = 0
@@ -311,20 +337,53 @@ local function on_rocket_launched(event)
 end
 
 local entity_score_values = {
-    ['small-biter'] = 6,
-    ['small-spitter'] = 6,
-    ['medium-biter'] = 18,
-    ['medium-spitter'] = 18,
-    ['big-biter'] = 52,
-    ['big-spitter'] = 52,
-    ['behemoth-biter'] = 154,
-    ['behemoth-spitter'] = 154,
-    ['small-worm-turret'] = 32,
-    ['medium-worm-turret'] = 64,
-    ['big-worm-turret'] = 96,
-    ['behemoth-worm-turret'] = 128,
-    ['biter-spawner'] = 128,
-    ['spitter-spawner'] = 128,
+    ['small-spitter'] = 1.5,
+    ['small-biter'] = 1.5,
+    ['medium-spitter'] = 4.5,
+    ['medium-biter'] = 4.5,
+    ['small-wriggler-pentapod'] = 5,
+    ['medium-wriggler-pentapod'] = 9,
+    ['big-spitter'] = 13,
+    ['big-biter'] = 13,
+    ['big-wriggler-pentapod'] = 13,
+    ['behemoth-spitter'] = 38.5,
+    ['behemoth-biter'] = 38.5,
+    ['behemoth-wriggler-pentapod'] = 40,
+    ['titan-spitter'] = 300,
+    ['titan-biter'] = 300,
+    ['titan-wriggler-pentapod'] = 320,
+    ['gargantuan-spitter'] = 2500,
+    ['gargantuan-biter'] = 2500,
+    ['small-worm-turret'] = 8,
+    ['medium-worm-turret'] = 16,
+    ['big-worm-turret'] = 24,
+    ['behemoth-worm-turret'] = 32,
+    ['gargantuan-wriggler-pentapod'] = 2800,
+    ['small-strafer-pentapod'] = 50,
+    ['medium-strafer-pentapod'] = 80,
+    ['big-strafer-pentapod'] = 110,
+    ['behemoth-strafer-pentapod'] = 1000,
+    ['titan-strafer-pentapod'] = 9000,
+    ['small-stomper-pentapod'] = 90,
+    ['medium-stomper-pentapod'] = 150,
+    ['big-stomper-pentapod'] = 210,
+    ['behemoth-stomper-pentapod'] = 1900,
+    ['titan-stomper-pentapod'] = 17000,
+}
+
+local boss_tier_map = {
+    ['big-biter'] = 1,
+    ['big-wriggler-pentapod'] = 1,
+
+    ['behemoth-spitter'] = 2,
+    ['behemoth-wriggler-pentapod'] = 2,
+
+    ['behemoth-biter'] = 3,
+    ['medium-strafer-pentapod'] = 3,
+
+    ['titan-wriggler-pentapod'] = 4,
+    ['titan-biter'] = 4,
+    ['big-stomper-pentapod'] = 4,
 }
 
 local function train_type_cause(event)
@@ -375,6 +434,23 @@ local kill_causes = {
     ['fluid-wagon'] = train_type_cause,
 }
 
+local function give_loot(name, quality, surface, entity, player)
+    local inserted_count = player.insert({ name = name, count = 1, quality = quality })
+    if inserted_count < 1 then
+        surface.spill_item_stack({
+            position = entity.position,
+            stack = { name = name, count = 1, quality = quality},
+            enable_looted = true,
+        })
+    end
+
+    player.create_local_flying_text({
+        position = { entity.position.x, entity.position.y + 0.5},
+        text = '+1 [img=item/' .. name .. ']',
+        color = { r = 0.98, g = 0.66, b = 0.22 },
+    })
+end
+
 local function on_entity_died(event)
     local entity = event.entity
     if not (entity and entity.valid) then
@@ -402,15 +478,32 @@ local function on_entity_died(event)
     if #players_to_reward == 0 then
         return
     end
+    local quality_factor = 1
+    local do_loot = false
+
+    if entity.quality.name == 'uncommon' then quality_factor = 1.3 end
+
+    if entity.quality.name == 'rare' then
+        quality_factor = 1.6
+        if math_random(1, 100) >= 83 then do_loot = true end
+    end
+
+    if entity.quality.name == 'epic' then
+        quality_factor = 1.9
+        if math_random(1, 100) >= 65 then do_loot = true end
+    end
+
+    if entity.quality.name == 'legendary' then
+        quality_factor = 25
+        do_loot = true
+    end
+
+    local value = math_round(entity_score_values[entity.name] * quality_factor)
+
+    local firstplayer = true
     for _, player in pairs(players_to_reward) do
         Public.init_player_table(player)
         local score = this.score_table[player.force.name].players[player.name]
-        local value = entity_score_values[entity.name]
-        if entity.type == 'unit-spawner' then
-            local evo = game.forces[entity.force.name].get_evolution_factor(entity.surface.name)
-            value = value * (1 + 9 * evo ^ 2.25)
-        end
-        value = math_round(value)
         score.killscore = score.killscore + value
         if storage.show_floating_killscore[player.name] then
             Functions.create_local_flying_text({
@@ -419,6 +512,144 @@ local function on_entity_died(event)
                 text = tostring(value),
                 color = player.chat_color,
             })
+        end
+        
+        if firstplayer and do_loot then
+            firstplayer = false
+
+            local lootname
+            local loot_quality = 'normal'
+            local surface = entity.surface
+            if entity.quality.name == 'legendary' then
+                local tier = boss_tier_map[entity.name]
+                if not tier then tier = 1 end
+
+                local flood_income_increase
+                if tier == 4 then
+                    flood_income_increase = 2.5
+                elseif tier == 3 then
+                    flood_income_increase = 0.5
+                elseif tier == 2 then
+                    flood_income_increase = 0.1
+                else
+                    flood_income_increase = 0.02
+                end
+                local biter_force_name = entity.force.name
+                storage.bb_flood_income[biter_force_name] = storage.bb_flood_income[biter_force_name] + flood_income_increase
+                
+                if tier == 1 then
+                    --check if player already owns an armor, if not, give one
+                    local main = player.character.get_main_inventory().get_contents()
+                    local armor = player.character.get_inventory(defines.inventory.character_armor).get_contents()
+                    local trash = player.character.get_inventory(defines.inventory.character_trash).get_contents()
+                    local armor_found = false
+                    for _,item in pairs(armor) do
+                        if item.name == 'modular-armor' or item.name == 'power-armor' or item.name == 'power-armor-mk2' or item.name == 'mech-armor' or armor_found then
+                            armor_found = true
+                            break;
+                        end
+                    end
+                    for _,item in pairs(main) do
+                        if item.name == 'modular-armor' or armor_found then
+                            armor_found = true
+                            break;
+                        end
+                    end
+                    for _,item in pairs(trash) do
+                        if item.name == 'modular-armor' or armor_found then
+                            armor_found = true
+                            break;
+                        end
+                    end
+
+                    if not armor_found then
+                        give_loot('modular-armor', 'normal', surface, entity, player)
+                    end
+                else
+                    --check if player already owns a railgun, if not, give one
+                    local main = player.character.get_main_inventory().get_contents()
+                    local guns = player.character.get_inventory(defines.inventory.character_guns).get_contents()
+                    local trash = player.character.get_inventory(defines.inventory.character_trash).get_contents()
+                    local teslagun_found = false
+                    local railgun_found = false
+                    for _,item in pairs(guns) do
+                        if item.name == 'railgun' then
+                            railgun_found = true
+                        end
+                        if item.name == 'teslagun' then
+                            teslagun_found = true
+                        end
+                        if teslagun_found and railgun_found then
+                            break
+                        end
+                    end
+                    for _,item in pairs(main) do
+                        if item.name == 'railgun' then
+                            railgun_found = true
+                        end
+                        if item.name == 'teslagun' then
+                            teslagun_found = true
+                        end
+                        if teslagun_found and railgun_found then
+                            break
+                        end
+                    end
+                    for _,item in pairs(trash) do
+                        if item.name == 'railgun' then
+                            railgun_found = true
+                        end
+                        if item.name == 'teslagun' then
+                            teslagun_found = true
+                        end
+                        if teslagun_found and railgun_found then
+                            break
+                        end
+                    end
+
+                    if not teslagun_found then
+                        give_loot('teslagun', 'normal', surface, entity, player)
+                    elseif not railgun_found then
+                        give_loot('railgun', 'normal', surface, entity, player)
+                    end
+
+                    if math_random(1,10) == 1 then
+                        loot_quality = 'rare'
+                    else
+                        loot_quality = 'uncommon'
+                    end
+                end
+
+                if tier > 2 then
+                    if tier > 3 or math_random(1,5) == 1 then
+                        if math_random(1,5) == 1 then
+                            loot_quality = 'legendary'
+                        else
+                            loot_quality = 'epic'
+                        end
+                    else
+                        loot_quality = 'rare'
+                    end
+                end
+
+                lootname = LootRaffle.roll_tier_loot(tier)
+            else
+                if entity.quality.name == 'epic' then
+                    if math_random(1,5) == 1 then
+                        if math_random(1,5) == 1 then
+                            if math_random(1,5) == 1 then
+                                loot_quality = 'epic'
+                            else
+                                loot_quality = 'rare'
+                            end
+                        else
+                            loot_quality = 'uncommon'
+                        end
+                    end
+                end
+                lootname = LootRaffle.roll_loot(entity.quality.name)
+            end
+
+            give_loot(lootname, loot_quality, surface, entity, player)
         end
     end
 end

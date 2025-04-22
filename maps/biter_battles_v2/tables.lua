@@ -10,44 +10,32 @@ Public.ammo_modified_forces_list = { 'north', 'south', 'spectator' }
 -- ammo_modifier_dmg = base_damage * base_ammo_modifiers
 -- damage = base_damage + ammo_modifier_dmg
 Public.base_ammo_modifiers = {
-    ['bullet'] = 0.16,
     ['shotgun-shell'] = 1,
-    ['flamethrower'] = -0.6,
-    ['landmine'] = -0.9,
 }
 
 -- turret attack modifier via set_turret_attack_modifier
 Public.base_turret_attack_modifiers = {
-    ['flamethrower-turret'] = -0.8,
-    ['laser-turret'] = 0.0,
-}
-
-Public.upgrade_modifiers = {
-    ['flamethrower'] = 0.02,
-    ['flamethrower-turret'] = 0.02,
-    ['laser-turret'] = 0.3,
-    ['shotgun-shell'] = 0.6,
-    ['grenade'] = 0.48,
-    ['landmine'] = 0.04,
+    ['flamethrower-turret'] = -0.9,
 }
 
 Public.food_values = {
-    ['automation-science-pack'] = { value = 0.0009, name = 'automation science', color = '255, 50, 50' },
-    ['logistic-science-pack'] = { value = 0.0023, name = 'logistic science', color = '50, 255, 50' },
-    ['military-science-pack'] = { value = 0.0095, name = 'military science', color = '105, 105, 105' },
-    ['chemical-science-pack'] = { value = 0.0250, name = 'chemical science', color = '100, 200, 255' },
-    ['production-science-pack'] = { value = 0.1050, name = 'production science', color = '150, 25, 255' },
-    ['utility-science-pack'] = { value = 0.1680, name = 'utility science', color = '210, 210, 60' },
-    ['space-science-pack'] = { value = 0.3500, name = 'space science', color = '255, 255, 255' },
-    ['metallurgic-science-pack'] = { value = 0.0010, name = 'metallurgic science', color = '255, 165, 0' },
-    ['electromagnetic-science-pack'] = { value = 0.0011, name = 'electromagnetic science', color = '255, 192, 203' },
-    ['agricultural-science-pack'] = { value = 0.0012, name = 'agricultural science', color = '192, 255, 0' },
-    ['cryogenic-science-pack'] = { value = 0.0013, name = 'cryogenic science', color = '0, 0, 139' },
+    ['automation-science-pack'] = { value = 0.001, name = 'automation science', color = '255, 50, 50' },
+    ['logistic-science-pack'] = { value = 0.0025, name = 'logistic science', color = '50, 255, 50' },
+    ['military-science-pack'] = { value = 0.0105, name = 'military science', color = '105, 105, 105' },
+    ['chemical-science-pack'] = { value = 0.029, name = 'chemical science', color = '100, 200, 255' },
+    ['space-science-pack'] = { value = 0.054, name = 'space science', color = '255, 255, 255' },
+    ['production-science-pack'] = { value = 0.102, name = 'production science', color = '150, 25, 255' },
+    ['utility-science-pack'] = { value = 0.167, name = 'utility science', color = '210, 210, 60' },
+    ['metallurgic-science-pack'] = { value = 0.14, name = 'metallurgic science', color = '255, 165, 0' },
+    ['electromagnetic-science-pack'] = { value = 0.151, name = 'electromagnetic science', color = '255, 192, 203' },
+    ['agricultural-science-pack'] = { value = 0.012, name = 'agricultural science', color = '192, 255, 0' },
+    ['cryogenic-science-pack'] = { value = 0.189, name = 'cryogenic science', color = '0, 0, 139' },
+    ['promethium-science-pack'] = { value = 9.001, name = 'promethium science', color = '40, 20, 40' },
 }
 
 Public.gui_foods = {}
 for k, v in pairs(Public.food_values) do
-    Public.gui_foods[k] = math.floor(v.value * 10000) .. ' Mutagen strength'
+    Public.gui_foods[k] = math.floor(v.value * 1000) .. ' Mutagen strength'
 end
 Public.gui_foods['raw-fish'] =
     'Send a fish to spy for 45 seconds.\nLeft Mouse Button: Send one fish.\nRMB: Sends 5 fish.\nShift+LMB: Send all fish.\nShift+RMB: Send half of all fish.'
@@ -67,13 +55,14 @@ Public.food_names = {
     ['logistic-science-pack'] = true,
     ['military-science-pack'] = true,
     ['chemical-science-pack'] = true,
+    ['space-science-pack'] = true,
     ['production-science-pack'] = true,
     ['utility-science-pack'] = true,
-    ['space-science-pack'] = true,
+    ['agricultural-science-pack'] = true,
     ['metallurgic-science-pack'] = true,
     ['electromagnetic-science-pack'] = true,
-    ['agricultural-science-pack'] = true,
     ['cryogenic-science-pack'] = true,
+    ['promethium-science-pack'] = true,
 }
 
 Public.food_long_and_short = {
@@ -81,13 +70,14 @@ Public.food_long_and_short = {
     [2] = { short_name = 'logistic', long_name = 'logistic-science-pack' },
     [3] = { short_name = 'military', long_name = 'military-science-pack' },
     [4] = { short_name = 'chemical', long_name = 'chemical-science-pack' },
-    [5] = { short_name = 'production', long_name = 'production-science-pack' },
-    [6] = { short_name = 'utility', long_name = 'utility-science-pack' },
-    [7] = { short_name = 'space', long_name = 'space-science-pack' },
-    [8] = { short_name = 'vulcanus', long_name = 'metallurgic-science-pack' },
-    [9] = { short_name = 'fulgora', long_name = 'electromagnetic-science-pack' },
-    [10] = { short_name = 'gleba', long_name = 'agricultural-science-pack' },
+    [5] = { short_name = 'space', long_name = 'space-science-pack' },
+    [6] = { short_name = 'production', long_name = 'production-science-pack' },
+    [7] = { short_name = 'utility', long_name = 'utility-science-pack' },
+    [8] = { short_name = 'gleba', long_name = 'agricultural-science-pack' },
+    [9] = { short_name = 'vulcanus', long_name = 'metallurgic-science-pack' },
+    [10] = { short_name = 'fulgora', long_name = 'electromagnetic-science-pack' },
     [11] = { short_name = 'aquilo', long_name = 'cryogenic-science-pack' },
+    [12] = { short_name = 'promethium', long_name = 'promethium-science-pack' },
 }
 
 Public.food_long_to_short = {
@@ -95,13 +85,14 @@ Public.food_long_to_short = {
     ['logistic-science-pack'] = { short_name = 'logistic', indexScience = 2 },
     ['military-science-pack'] = { short_name = 'military', indexScience = 3 },
     ['chemical-science-pack'] = { short_name = 'chemical', indexScience = 4 },
-    ['production-science-pack'] = { short_name = 'production', indexScience = 5 },
-    ['utility-science-pack'] = { short_name = 'utility', indexScience = 6 },
-    ['space-science-pack'] = { short_name = 'space', indexScience = 7 },
-    ['metallurgic-science-pack'] = { short_name = 'vulcanus', indexScience = 8 },
-    ['electromagnetic-science-pack'] = { short_name = 'fulgora', indexScience = 9 },
-    ['agricultural-science-pack'] = { short_name = 'gleba', indexScience = 10 },
+    ['space-science-pack'] = { short_name = 'space', indexScience = 5 },
+    ['production-science-pack'] = { short_name = 'production', indexScience = 6 },
+    ['utility-science-pack'] = { short_name = 'utility', indexScience = 7 },
+    ['agricultural-science-pack'] = { short_name = 'gleba', indexScience = 8 },
+    ['metallurgic-science-pack'] = { short_name = 'vulcanus', indexScience = 9 },
+    ['electromagnetic-science-pack'] = { short_name = 'fulgora', indexScience = 10 },
     ['cryogenic-science-pack'] = { short_name = 'aquilo', indexScience = 11 },
+    ['promethium-science-pack'] = { short_name = 'promethium', indexScience = 12 },
 }
 
 -- This array contains parameters for spawn area ore patches.
@@ -235,9 +226,14 @@ Public.difficulty_lowered_names_to_index = {
 Public.forces_list = { 'all teams', 'north', 'south' }
 Public.science_list = {
     'all science',
-    'very high tier (space, utility, production)',
-    'high tier (space, utility, production, chemical)',
-    'mid+ tier (space, utility, production, chemical, military)',
+    'very high tier (promethium, aquilo, fulgora)',
+    'high tier (promethium, aquilo, fulgora, vulcanus, utility)',
+    'mid+ tier (promethium, aquilo, fulgora, vulcanus, utility, production, gleba, chemical, military)',
+    'promethium',
+    'aquilo',
+    'fulgora',
+    'vulcanus',
+    'gleba',
     'space',
     'utility',
     'production',
@@ -260,6 +256,7 @@ Public.food_value_table_version = {
     Public.food_values['electromagnetic-science-pack'].value,
     Public.food_values['agricultural-science-pack'].value,
     Public.food_values['cryogenic-science-pack'].value,
+    Public.food_values['promethium-science-pack'].value,
 }
 
 return Public

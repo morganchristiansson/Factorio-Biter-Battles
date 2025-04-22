@@ -34,6 +34,8 @@ require('maps.biter_battles_v2.changelog_tab')
 require('maps.biter_battles_v2.commands')
 require('modules.spawners_contain_biters')
 
+local math_min = math.min
+
 local function on_player_joined_game(event)
     local surface = game.surfaces[storage.bb_surface_name]
     local player = game.get_player(event.player_index)
@@ -97,14 +99,9 @@ local function on_gui_click(event)
 end
 
 local function on_research_finished(event)
-    Functions.combat_balance(event)
-
     local name = event.research.name
     local force = event.research.force
-    if name == 'uranium-processing' then
-        force.technologies['uranium-ammo'].researched = true
-        force.technologies['kovarex-enrichment-process'].researched = true
-    elseif name == 'stone-wall' then
+    if name == 'stone-wall' then
         force.technologies['gate'].researched = true
     end
     game.forces.spectator.print(
@@ -120,7 +117,6 @@ local function on_research_started(event)
 end
 
 local function on_research_reversed(event)
-    -- Note that this will not really work for Functions.combat_balance, so don't go reversing technologies.
     local name = event.research.name
     local force = event.research.force
     ResearchInfo.research_reversed(name, force)
@@ -404,7 +400,7 @@ local function on_entity_died(event)
         return
     end
     if Ai.subtract_threat(entity) then
-        Gui.refresh_threat()
+        Gui.refresh_threat(false)
     end
     if Functions.biters_landfill(entity) then
         return
@@ -509,10 +505,11 @@ local function on_tick()
 
     if tick % 60 == 0 then
         profile(on_tick_profilers, 'threat', function()
-            storage.bb_threat['north_biters'] = storage.bb_threat['north_biters']
-                + storage.bb_threat_income['north_biters']
-            storage.bb_threat['south_biters'] = storage.bb_threat['south_biters']
-                + storage.bb_threat_income['south_biters']
+            --increase threat by 5 times evo times players, up to 25 times evo
+            storage.bb_threat['north_biters'] = storage.bb_threat['north_biters'] + storage.bb_evolution['north_biters'] * math_min(#game.forces['north'].connected_players, 5) * 5
+            storage.bb_threat['south_biters'] = storage.bb_threat['south_biters'] + storage.bb_evolution['south_biters'] * math_min(#game.forces['south'].connected_players, 5) * 5
+            Gui.refresh_threat(true)
+            Ai.flood()
         end)
     end
 
@@ -545,15 +542,15 @@ local function on_tick()
     end
 
     --[[
-		Map width: 2000 tiles (~64 chunks) each direction
-		Map height: 500 tiles (~16 chunks) each direction
-		Estimated time for complete reveal: 90s (5400 ticks)
+        Map width: 2000 tiles (~64 chunks) each direction
+        Map height: 500 tiles (~16 chunks) each direction
+        Estimated time for complete reveal: 90s (5400 ticks)
 
-		pop_chunk_request will chart the queued chunk requests issued during a new map reveal.
-		We chart 65 chunks each iteration because of 16-chunks-tall zones NE, NW, SE, SW, + 1 bonus chunk which is the starting area.
-		To fully reveal the new map within the time window, the time interval between requests should be ~84 ticks (5400 / 64-chunks-length),
-		plus + 24 ticks as offset to avoid tick_0
-	]]
+        pop_chunk_request will chart the queued chunk requests issued during a new map reveal.
+        We chart 65 chunks each iteration because of 16-chunks-tall zones NE, NW, SE, SW, + 1 bonus chunk which is the starting area.
+        To fully reveal the new map within the time window, the time interval between requests should be ~84 ticks (5400 / 64-chunks-length),
+        plus + 24 ticks as offset to avoid tick_0
+    ]]
     if (tick + 24) % 84 == 0 then
         profile(on_tick_profilers, 'pop_chunk_request', function()
             Init.pop_chunk_request(65)

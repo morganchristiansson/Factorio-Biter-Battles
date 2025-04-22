@@ -36,9 +36,6 @@ local function generate_shared_science_throw()
     local maxBbEvo = math.max(storage.bb_evolution['north_biters'], storage.bb_evolution['south_biters'])
     storage.bb_evolution['north_biters'] = maxBbEvo
     storage.bb_evolution['south_biters'] = maxBbEvo
-    local maxThreatIncome = math.max(storage.bb_threat_income['north_biters'], storage.bb_threat_income['south_biters'])
-    storage.bb_threat_income['north_biters'] = maxThreatIncome
-    storage.bb_threat_income['south_biters'] = maxThreatIncome
     local maxThreat = math.max(storage.bb_threat['north_biters'], storage.bb_threat['south_biters'])
     storage.bb_threat['north_biters'] = maxThreat
     storage.bb_threat['south_biters'] = maxThreat

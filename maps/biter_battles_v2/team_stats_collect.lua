@@ -63,17 +63,17 @@ TeamStatsCollect.items_to_show_summaries_of = {
 TeamStatsCollect.damage_render_info = {
     {
         'physical',
-        'Physical [item=gun-turret][item=submachine-gun][item=defender-capsule]',
+        'Physical [item=gun-turret][item=railgun][item=defender-capsule]',
         'Also [item=shotgun-shell][item=cannon-shell] etc',
     },
     {
         'explosion',
-        'Explosion [item=grenade]',
-        'Also [item=explosive-cannon-shell][item=explosive-rocket][item=cluster-grenade] etc',
+        'Explosion [item=grenade][item=rocket]',
+        'Also [item=explosive-cannon-shell][item=cluster-grenade] etc',
     },
     { 'laser', 'Laser [item=laser-turret]' },
     { 'fire', 'Fire [item=flamethrower-turret]', 'Also [item=flamethrower]' },
-    { 'electric', 'Electric [item=discharge-defense-equipment][item=destroyer-capsule]' },
+    { 'electric', 'Electric [item=teslagun][item=discharge-defense-equipment]' },
     { 'poison', 'Poison [item=poison-capsule]' },
     { 'impact', 'Impact [item=locomotive][item=car][item=tank]' },
 }
@@ -95,20 +95,12 @@ local tracked_inventories = {
     ['roboport'] = true,
     ['rocket-silo'] = true,
     ['spider-vehicle'] = true,
+    ['tank'] = true,
 }
 
 local force_name_map = {
     north_biters = 'north',
-    north_biters_boss = 'north',
     south_biters = 'south',
-    south_biters_boss = 'south',
-}
-
-local health_factor_map = {
-    north_biters = 1,
-    north_biters_boss = 20,
-    south_biters = 1,
-    south_biters_boss = 20,
 }
 
 local function update_teamstats()
@@ -339,13 +331,10 @@ local function on_entity_died(event)
     if not event.damage_type then
         return
     end
-    local health_factor = health_factor_map[entity_force_name]
     local force_name = force_name_map[entity_force_name]
-    if not health_factor or not force_name then
+    if not force_name then
         return
     end
-
-    health_factor = health_factor * storage.biter_health_factor[game.forces[force_name .. '_biters'].index]
 
     local force_stats = storage.team_stats.forces[force_name]
     local damage_stats = force_stats.damage_types[event.damage_type.name]
@@ -354,9 +343,7 @@ local function on_entity_died(event)
         force_stats.damage_types[event.damage_type.name] = damage_stats
     end
     damage_stats.kills = damage_stats.kills + 1
-    -- This is somewhat inaccurate, because biter_health_factor might be different
-    -- now than when the biter was spawned, but it is close enough for me.
-    damage_stats.damage = damage_stats.damage + entity.prototype.get_max_health() * health_factor
+    damage_stats.damage = damage_stats.damage + entity.prototype.get_max_health()
 end
 
 -- We could theoretically collect just once per minute, but this collection will not be

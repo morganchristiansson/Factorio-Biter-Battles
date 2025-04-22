@@ -6,6 +6,7 @@ local Color = require('utils.color_presets')
 local DifficultyVote = require('maps.biter_battles_v2.difficulty_vote')
 local Event = require('utils.event')
 local Feeding = require('maps.biter_battles_v2.feeding')
+local FeedingCalculations = require('maps.biter_battles_v2.feeding_calculations')
 local Functions = require('maps.biter_battles_v2.functions')
 local Gui = require('utils.gui')
 local PlayerUtils = require('utils.player')
@@ -21,8 +22,10 @@ local food_names = Tables.gui_foods
 
 local math_random = math.random
 local math_abs = math.abs
+local math_min = math.min
 local math_ceil = math.ceil
 local math_floor = math.floor
+local math_round = math.round
 local string_format = string.format
 
 local Public = {}
@@ -184,10 +187,10 @@ local function get_evo_tooltip(force, verbose)
     return prefix
         .. style.listbox('Evolution: ')
         .. style.yellow(style.stat(string_format('%.2f', (storage.bb_evolution[biter_force.name] * 100))))
+        .. style.listbox('%\nQuality: ')
+        .. style.yellow(style.stat(string_format('%.2f', (storage.bb_quality[biter_force.name] * 100))))
         .. style.listbox('%\nDamage: ')
         .. style.yellow(style.stat(damage))
-        .. style.listbox('%\nHealth: ')
-        .. style.yellow(style.stat(string_format('%.0f', (storage.biter_health_factor[biter_force.index] * 100))))
         .. style.listbox('%')
 end
 
@@ -199,13 +202,38 @@ local function get_threat_tooltip(force, verbose)
     if verbose then
         prefix = style.bold('Threat') .. ' - ' .. gui_values[force].t2 .. '\n'
     end
-    local threat_income = storage.bb_threat_income[force .. '_biters'] * 60
-    -- technically we could also include the threat-income-from-passive-feed here, but it is
-    -- generally much much lower than bb_threat_income's contribution
+    local threat_income = storage.bb_evolution[force .. '_biters'] * math_min(#game.forces[force].connected_players, 5) * 5 * 60
+    local flood_income = storage.bb_flood_income[force .. '_biters']
+    local boss_tier
+    local boss_chance
+    
+    if flood_income < 0.25 then
+        boss_tier = 'Prince / Princess'
+        boss_chance = math_floor(flood_income * 400)
+    elseif flood_income < 6 then
+        boss_tier = 'King / Queen'
+        boss_chance = math_floor(flood_income * 17 - 4)
+    elseif flood_income < 18.5 then
+        boss_tier = 'Emperor / Empress'
+        boss_chance = math_floor(flood_income * 4 - 24)
+    else
+        boss_tier = 'Emperor / Empress'
+        boss_chance = 50
+    end
+    
+    flood_income = flood_income * 60
+    
     return prefix
         .. style.listbox('Passive feed:')
         .. style.yellow(style.stat(' +' .. math_ceil(threat_income)))
         .. style.listbox(' threat/min')
+        .. style.listbox('\nPassive flood:')
+        .. style.yellow(style.stat(' -' .. math_ceil(flood_income)))
+        .. style.listbox(' threat/min')
+        .. style.listbox('\nCurrent boss tier: ')
+        .. style.yellow(style.stat(boss_tier))
+        .. style.listbox(' at a chance of ')
+        .. style.yellow(style.stat(boss_chance .. '%'))
 end
 
 ---@param force string
@@ -284,7 +312,7 @@ local function get_data_for_refresh_statistics()
                 players_tooltip = get_captain_caption('north') .. get_player_list_caption('north'),
                 evolution_caption = (math_floor(1000 * storage.bb_evolution['north_biters']) * 0.1) .. '%',
                 evolution_tooltip = get_evo_tooltip('north', false),
-                threat_caption = threat_to_pretty_string(math_floor(storage.bb_threat['north_biters'])),
+                threat_caption = threat_to_pretty_string(math_floor(10 * storage.bb_threat['north_biters']) * 0.1),
                 threat_tooltip = get_threat_tooltip('north', false),
             },
             ['south'] = {
@@ -293,7 +321,7 @@ local function get_data_for_refresh_statistics()
                 players_tooltip = get_captain_caption('south') .. get_player_list_caption('south'),
                 evolution_caption = (math_floor(1000 * storage.bb_evolution['south_biters']) * 0.1) .. '%',
                 evolution_tooltip = get_evo_tooltip('south', false),
-                threat_caption = threat_to_pretty_string(math_floor(storage.bb_threat['south_biters'])),
+                threat_caption = threat_to_pretty_string(math_floor(10 * storage.bb_threat['south_biters']) * 0.1),
                 threat_tooltip = get_threat_tooltip('south', false),
             },
         },
@@ -403,7 +431,7 @@ local function get_data_for_refresh_main_gui()
                 evolution_number = math_floor(1000 * storage.bb_evolution['north_biters']) * 0.1,
                 evolution_sprite = get_evo_sprite(math_floor(1000 * storage.bb_evolution['north_biters']) * 0.1),
                 evolution_tooltip = get_evo_tooltip('north', true),
-                threat_number = math_floor(storage.bb_threat['north_biters']),
+                threat_number = math_floor(10 * storage.bb_threat['north_biters']) * 0.1,
                 threat_tooltip = get_threat_tooltip('north', true),
                 captain = get_captain_caption('north'),
                 members = get_player_list_caption('north'),
@@ -414,7 +442,7 @@ local function get_data_for_refresh_main_gui()
                 evolution_number = math_floor(1000 * storage.bb_evolution['south_biters']) * 0.1,
                 evolution_sprite = get_evo_sprite(math_floor(1000 * storage.bb_evolution['south_biters']) * 0.1),
                 evolution_tooltip = get_evo_tooltip('south', true),
-                threat_number = math_floor(storage.bb_threat['south_biters']),
+                threat_number = math_floor(10 * storage.bb_threat['south_biters']) * 0.1,
                 threat_tooltip = get_threat_tooltip('south', true),
                 captain = get_captain_caption('south'),
                 members = get_player_list_caption('south'),
@@ -576,7 +604,7 @@ function Public.create_main_gui(player)
             name = 'send_all',
             caption = 'All',
             style = 'slot_button',
-            tooltip = 'LMB - low to high, RMB - high to low',
+            tooltip = 'Send all',
         })
         gui_style(f, { padding = 0, font_color = { r = 0.9, g = 0.9, b = 0.9 } })
         local f = t.add({
@@ -778,10 +806,78 @@ function Public.refresh_main_gui(player, data)
             local table = main.science_frame.flow.table_frame.send_table
             local all_enabled = true
             local button
+            
+            local stored_inventory_data = storage.inventory_science_packs[player.index]
+            if storage.dirty_inventory[player.index] == true then
+                if not stored_inventory_data then storage.inventory_science_packs[player.index] = {} end                
+                local inventory = player.get_main_inventory()
+                local contents
+                if inventory then contents = inventory.get_contents() end
+                if contents then
+                    local total_food = 0
+                    local total_connected_player_count = #game.forces.north.connected_players + #game.forces.south.connected_players
+                    local enemy_evo = 0
+                    if player.force.name == "south" then enemy_evo = storage.bb_evolution.north_biters
+                    elseif player.force.name == "north" then enemy_evo = storage.bb_evolution.south_biters
+                    end
+                    
+                    for food_name, tooltip in pairs(food_names) do
+                        if food_name ~= 'raw-fish' then
+                            local flasks = 0
+                            
+                            for _, item in pairs(contents) do
+                                if item.name == food_name then
+                                    local quality_multiplier = 1
+                                    if item.quality == 'normal' then quality_multiplier = 1
+                                    elseif item.quality == 'uncommon' then quality_multiplier = 2
+                                    elseif item.quality == 'rare' then quality_multiplier = 3
+                                    elseif item.quality == 'epic' then quality_multiplier = 4
+                                    else quality_multiplier = 6
+                                    end
+                                
+                                    flasks = flasks + item.count * quality_multiplier
+                                end
+                            end
+
+                            local threat_added = 0
+                            local evo_added = 0
+                            if flasks > 0 then
+                                local food_value = Tables.food_values[food_name].value
+                                local food = flasks * food_value
+                                total_food = total_food + food
+                                local effects = FeedingCalculations.calc_feed_effects(enemy_evo, food * storage.difficulty_vote_value, total_connected_player_count)
+                                evo_added = effects.evo_increase
+                                threat_added = effects.threat_increase
+                            end
+                            local tooltip_addition = { '', '\n\n[font=default-semibold]Inventory[/font]\nEvo increase: ', math_round(evo_added * 100, 2), '%\nThreat increase: ', math_round(threat_added, 0) }
+                            storage.inventory_science_packs[player.index][food_name] = {'', tooltip, tooltip_addition}
+                        end
+                    end
+                    
+                    local evo_added = 0
+                    local threat_added = 0
+                    if total_food > 0 then
+                        local effects = FeedingCalculations.calc_feed_effects(enemy_evo, total_food * storage.difficulty_vote_value, total_connected_player_count)
+                        evo_added = effects.evo_increase
+                        threat_added = effects.threat_increase
+                    end
+                    local send_all_tooltip = { '', 'Send all\n\n[font=default-semibold]Inventory[/font]\nEvo increase: ', math_round(evo_added * 100, 2), '%\nThreat increase: ', math_round(threat_added, 0) }
+                    storage.inventory_science_packs[player.index]['send_all_tooltip'] = send_all_tooltip
+
+                    stored_inventory_data = storage.inventory_science_packs[player.index]
+                end
+
+                storage.dirty_inventory[player.index] = false
+            end
+
             for food_name, tooltip in pairs(food_names) do
                 button = table[food_name]
                 button.visible = true
-                button.tooltip = tooltip
+                if not stored_inventory_data or not stored_inventory_data[food_name] then
+                    button.tooltip = tooltip
+                else
+                    button.tooltip = stored_inventory_data[food_name]
+                end
                 if
                     storage.active_special_games.disable_sciences
                     and storage.special_games_variables.disabled_food[food_name]
@@ -803,6 +899,9 @@ function Public.refresh_main_gui(player, data)
             end
             all_enabled = all_enabled and button.visible
             table.info.visible = not all_enabled
+            if button.visible and stored_inventory_data and stored_inventory_data['send_all_tooltip'] then
+                button.tooltip = stored_inventory_data['send_all_tooltip']
+            end
         end
     end
 
@@ -835,17 +934,21 @@ function Public.refresh()
     storage.gui_refresh_delay = game.tick + 30
 end
 
-function Public.refresh_threat()
-    if storage.gui_refresh_delay > game.tick then
+function Public.refresh_threat(force_refresh)
+    if not force_refresh and storage.gui_refresh_delay > game.tick then
         return
     end
+
+    local north_biter_threat = storage.bb_threat['north_biters']
+    local south_biter_threat = storage.bb_threat['south_biters']
+    
     local updates = {
         north = {
-            number = storage.bb_threat.north_biters,
+            number = north_biter_threat,
             tooltip = get_threat_tooltip('north', true),
         },
         south = {
-            number = storage.bb_threat.south_biters,
+            number = south_biter_threat,
             tooltip = get_threat_tooltip('south', true),
         },
     }
@@ -857,6 +960,15 @@ function Public.refresh_threat()
                 local info = teams[k].flow.table
                 info.threat.number = v.number
                 info.threat.tooltip = v.tooltip
+            end
+        end
+        local stats_frame = Gui.get_top_element(player, 'bb_frame_statistics')
+        if stats_frame and stats_frame.visible then
+            if math_abs(north_biter_threat) < 1e5 then
+                stats_frame['north_threat'].caption = threat_to_pretty_string(math_floor(north_biter_threat))
+            end
+            if math_abs(south_biter_threat) < 1e5 then
+                stats_frame['south_threat'].caption = threat_to_pretty_string(math_floor(south_biter_threat))
             end
         end
     end
@@ -956,7 +1068,7 @@ function join_team(player, force_name, forced_join, auto_join)
         enemy_team = 'north'
     end
 
-    if not storage.training_mode and storage.bb_settings.team_balancing then
+    if not storage.training_mode and storage.bb_settings.team_balancing and #game.forces[force_name].connected_players >= 2 then
         if not forced_join then
             if #game.forces[force_name].connected_players > #game.forces[enemy_team].connected_players then
                 if not storage.chosen_team[player.name] then
@@ -1376,6 +1488,19 @@ local function on_player_joined_game(event)
     Public.create_main_gui(player)
 end
 
+local function maybe_set_inventory_dirty(event)
+    local player = game.get_player(event.player_index)
+    if player and player.valid and player.character and player.character.valid and (player.force.name == 'north' or player.force.name == 'south') then
+        storage.dirty_inventory[event.player_index] = true
+    end
+end
+
+local function set_inventory_dirty(event)
+    storage.dirty_inventory[event.player_index] = true
+end
+
+Event.add(defines.events.on_player_controller_changed, maybe_set_inventory_dirty)
+Event.add(defines.events.on_player_main_inventory_changed, set_inventory_dirty)
 Event.add(defines.events.on_gui_click, on_gui_click)
 Event.add(defines.events.on_player_joined_game, on_player_joined_game)
 Event.add(defines.events.on_player_left_game, on_player_left_game)

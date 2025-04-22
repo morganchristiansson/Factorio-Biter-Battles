@@ -1,5 +1,29 @@
 return {
     {
+        number = 999,
+        date = '2025-04-22',
+        author = 'Atrixsanna',
+        comment = [[(#999) Quite a lot really..
+- Added gleba [img=entity/big-stomper-pentapod] pentapods and [img=quality/uncommon] quality biters to waves.
+- Quality [img=quality/rare] flask feeding, which increases the amount of quality biters.
+- Added [img=item/modular-armor][img=item/teslagun][img=item/railgun] loot on killing quality biters and worms.
+- Replace boss biters and health factor by titan and gargantuan units.
+- Spawn named legendary bosses to defend the hive.
+- Streched nest biter evo from 0-100% to 0-150%.
+- Add 'flood' mechanic triggered by [img=quality/legendary] legendary boss kills.
+- Moved combat_balance stuff to mod and increased power of nearly all turrets.
+- Put handheld [img=item/flamethrower-ammo] flamer back to full power, increased [img=item/uranium-rounds-magazine] uranium ammo and [img=item/piercing-shotgun-shell] piercing shotgun shells damage.
+- Refresh threat numbers faster.
+- Stop [img=item/infinity-chest] infinity chest recycling.
+- Show calculated feed values on button tooltips.
+- Overhaul feeding calculation to make it simpler and faster.
+- Made many late-game technologies cheaper and easier to access.
+- Added explosive immune [img=item/concrete-wall] concrete wall.
+- Moved solar system edge closer and spawn [img=entity/big-promethium-asteroid] big promethium asteroids there.
+- Increased [img=item/quality-module] quality module base quality% from 1 / 2 / 2.5 to 4 / 6 / 10.
+]],
+    },
+    {
         number = 692,
         date = '2025-02-22',
         author = 'TheBigZet',

@@ -69,8 +69,6 @@ function Public.initial_setup()
     game.create_force('south')
     game.create_force('north_biters')
     game.create_force('south_biters')
-    game.create_force('north_biters_boss')
-    game.create_force('south_biters_boss')
     game.create_force('spectator')
 
     game.forces.spectator.set_surface_hidden('gulag', true)
@@ -170,6 +168,8 @@ function Public.initial_setup()
     ---@type table<string, TeamstatsPreferences>
     storage.teamstats_preferences = {}
     storage.allow_teamstats = 'always'
+    storage.dirty_inventory = {}
+    storage.inventory_science_packs = {}
     --Disable Nauvis
     local surface = game.surfaces[1]
     local map_gen_settings = surface.map_gen_settings
@@ -286,16 +286,16 @@ function Public.tables()
     storage.reroll_map_voting = {}
     storage.automatic_captain_voting = {}
     storage.bb_evolution = {}
+    storage.bb_quality = {}
     storage.benchmark_mode = false
     storage.bb_game_won_by_team = nil
     storage.bb_game_start_tick = nil
     storage.bb_threat = {}
-    storage.bb_threat_income = {}
+    storage.bb_flood = {}
+    storage.bb_flood_income = {}
     storage.chosen_team = {}
     storage.got_burners = {}
-    storage.combat_balance = {}
     storage.difficulty_player_votes = {}
-    storage.evo_raise_counter = 1
     storage.force_area = {}
     storage.main_attack_wave_amount = 0
     storage.map_pregen_message_counter = {}
@@ -303,18 +303,17 @@ function Public.tables()
     storage.spectator_rejoin_delay = {}
     storage.spy_fish_timeout = {}
     storage.tm_custom_name = {}
-    storage.total_passive_feed_redpotion = 0
+    storage.total_passive_feed_redpotion = {}
+    storage.passive_feed_redpotion = {}
     storage.unit_spawners = {}
-    ---@type table<integer, HighHealthUnit>
-    storage.high_health_units = {}
     storage.unit_spawners.north_biters = {}
     storage.unit_spawners.south_biters = {}
     storage.ai_targets = {}
     storage.player_data_afk = {}
-    storage.max_group_size_initial = 300 --Maximum unit group size for all biters at start, just used as a reference, doesnt change initial group size.
-    storage.max_group_size = {}
-    storage.max_group_size['north_biters'] = 300 --Maximum unit group size for north biters.
-    storage.max_group_size['south_biters'] = 300 --Maximum unit group size for south biters.
+    storage.last_boss_spawn = {
+        ['north_biters'] = 0,
+        ['south_biters'] = 0,
+    }
     storage.biter_spawn_unseen = {
         ['north'] = {
             ['medium-spitter'] = true,
@@ -323,6 +322,25 @@ function Public.tables()
             ['big-biter'] = true,
             ['behemoth-spitter'] = true,
             ['behemoth-biter'] = true,
+            ['titan-spitter'] = true,
+            ['titan-biter'] = true,
+            ['gargantuan-spitter'] = true,
+            ['gargantuan-biter'] = true,
+            ['medium-wriggler-pentapod'] = true,
+            ['big-wriggler-pentapod'] = true,
+            ['behemoth-wriggler-pentapod'] = true,
+            ['titan-wriggler-pentapod'] = true,
+            ['gargantuan-wriggler-pentapod'] = true,
+            ['small-strafer-pentapod'] = true,
+            ['small-stomper-pentapod'] = true,
+            ['medium-strafer-pentapod'] = true,
+            ['medium-stomper-pentapod'] = true,
+            ['big-strafer-pentapod'] = true,
+            ['big-stomper-pentapod'] = true,
+            ['behemoth-strafer-pentapod'] = true,
+            ['behemoth-stomper-pentapod'] = true,
+            ['titan-strafer-pentapod'] = true,
+            ['titan-stomper-pentapod'] = true,
         },
         ['south'] = {
             ['medium-spitter'] = true,
@@ -331,22 +349,79 @@ function Public.tables()
             ['big-biter'] = true,
             ['behemoth-spitter'] = true,
             ['behemoth-biter'] = true,
+            ['titan-spitter'] = true,
+            ['titan-biter'] = true,
+            ['gargantuan-spitter'] = true,
+            ['gargantuan-biter'] = true,
+            ['medium-wriggler-pentapod'] = true,
+            ['big-wriggler-pentapod'] = true,
+            ['behemoth-wriggler-pentapod'] = true,
+            ['titan-wriggler-pentapod'] = true,
+            ['gargantuan-wriggler-pentapod'] = true,
+            ['small-strafer-pentapod'] = true,
+            ['small-stomper-pentapod'] = true,
+            ['medium-strafer-pentapod'] = true,
+            ['medium-stomper-pentapod'] = true,
+            ['big-strafer-pentapod'] = true,
+            ['big-stomper-pentapod'] = true,
+            ['behemoth-strafer-pentapod'] = true,
+            ['behemoth-stomper-pentapod'] = true,
+            ['titan-strafer-pentapod'] = true,
+            ['titan-stomper-pentapod'] = true,
         },
-        ['north_biters_boss'] = {
+        ['north_hq'] = {
             ['medium-spitter'] = true,
             ['medium-biter'] = true,
             ['big-spitter'] = true,
             ['big-biter'] = true,
             ['behemoth-spitter'] = true,
             ['behemoth-biter'] = true,
+            ['titan-spitter'] = true,
+            ['titan-biter'] = true,
+            ['gargantuan-spitter'] = true,
+            ['gargantuan-biter'] = true,
+            ['medium-wriggler-pentapod'] = true,
+            ['big-wriggler-pentapod'] = true,
+            ['behemoth-wriggler-pentapod'] = true,
+            ['titan-wriggler-pentapod'] = true,
+            ['gargantuan-wriggler-pentapod'] = true,
+            ['small-strafer-pentapod'] = true,
+            ['small-stomper-pentapod'] = true,
+            ['medium-strafer-pentapod'] = true,
+            ['medium-stomper-pentapod'] = true,
+            ['big-strafer-pentapod'] = true,
+            ['big-stomper-pentapod'] = true,
+            ['behemoth-strafer-pentapod'] = true,
+            ['behemoth-stomper-pentapod'] = true,
+            ['titan-strafer-pentapod'] = true,
+            ['titan-stomper-pentapod'] = true,
         },
-        ['south_biters_boss'] = {
+        ['south_hq'] = {
             ['medium-spitter'] = true,
             ['medium-biter'] = true,
             ['big-spitter'] = true,
             ['big-biter'] = true,
             ['behemoth-spitter'] = true,
             ['behemoth-biter'] = true,
+            ['titan-spitter'] = true,
+            ['titan-biter'] = true,
+            ['gargantuan-spitter'] = true,
+            ['gargantuan-biter'] = true,
+            ['medium-wriggler-pentapod'] = true,
+            ['big-wriggler-pentapod'] = true,
+            ['behemoth-wriggler-pentapod'] = true,
+            ['titan-wriggler-pentapod'] = true,
+            ['gargantuan-wriggler-pentapod'] = true,
+            ['small-strafer-pentapod'] = true,
+            ['small-stomper-pentapod'] = true,
+            ['medium-strafer-pentapod'] = true,
+            ['medium-stomper-pentapod'] = true,
+            ['big-strafer-pentapod'] = true,
+            ['big-stomper-pentapod'] = true,
+            ['behemoth-strafer-pentapod'] = true,
+            ['behemoth-stomper-pentapod'] = true,
+            ['titan-strafer-pentapod'] = true,
+            ['titan-stomper-pentapod'] = true,
         },
     }
     storage.difficulty_vote_value = 0.75
@@ -354,18 +429,6 @@ function Public.tables()
 
     storage.difficulty_votes_timeout = 36000
     storage.threat_multiplier = nil
-
-    -- Maximum evolution threshold after which biters have 100% chance
-    -- to reanimate. The reanimation starts after evolution factor reaches
-    -- 100, so this value starts having an effect only at that point.
-    -- To reach 100% reanimation chance at 200% evolution, set it to 100.
-    -- To reach 100% reanimation chance at 350% evolution, set it to 250.
-    -- This is used to calculate biter_health_factor.
-    storage.max_reanim_thresh = 250
-
-    -- Container for storing health factor, accessed by key with force's index.
-    ---@type table<integer, number>
-    storage.biter_health_factor = {}
 
     local rng = game.create_random_generator(storage.next_map_seed)
     storage.next_attack = 'north'
@@ -402,7 +465,6 @@ function Public.forces()
     f.set_cease_fire('player', true)
     f.set_friend('spectator', true)
     f.set_friend('south_biters', true)
-    f.set_friend('south_biters_boss', true)
     f.share_chart = true
 
     local f = game.forces['south']
@@ -410,13 +472,10 @@ function Public.forces()
     f.set_cease_fire('player', true)
     f.set_friend('spectator', true)
     f.set_friend('north_biters', true)
-    f.set_friend('north_biters_boss', true)
     f.share_chart = true
 
     local f = game.forces['north_biters']
     f.set_friend('south_biters', true)
-    f.set_friend('south_biters_boss', true)
-    f.set_friend('north_biters_boss', true)
     f.set_friend('south', true)
     f.set_friend('player', true)
     f.set_friend('spectator', true)
@@ -425,28 +484,6 @@ function Public.forces()
 
     local f = game.forces['south_biters']
     f.set_friend('north_biters', true)
-    f.set_friend('north_biters_boss', true)
-    f.set_friend('south_biters_boss', true)
-    f.set_friend('north', true)
-    f.set_friend('player', true)
-    f.set_friend('spectator', true)
-    f.set_friend('enemy', true)
-    f.share_chart = false
-
-    local f = game.forces['north_biters_boss']
-    f.set_friend('south_biters', true)
-    f.set_friend('north_biters', true)
-    f.set_friend('south_biters_boss', true)
-    f.set_friend('south', true)
-    f.set_friend('player', true)
-    f.set_friend('spectator', true)
-    f.set_friend('enemy', true)
-    f.share_chart = false
-
-    local f = game.forces['south_biters_boss']
-    f.set_friend('north_biters', true)
-    f.set_friend('south_biters', true)
-    f.set_friend('north_biters_boss', true)
     f.set_friend('north', true)
     f.set_friend('player', true)
     f.set_friend('spectator', true)
@@ -475,8 +512,6 @@ function Public.forces()
     local f = game.forces['enemy']
     f.set_friend('north_biters', true)
     f.set_friend('south_biters', true)
-    f.set_friend('north_biters_boss', true)
-    f.set_friend('south_biters_boss', true)
 
     for _, force in pairs(game.forces) do
         game.forces[force.name].lock_space_location("nauvis")
@@ -491,7 +526,6 @@ function Public.forces()
         game.forces[force.name].technologies['planet-discovery-gleba'].enabled = false
         game.forces[force.name].technologies['planet-discovery-vulcanus'].enabled = false
         game.forces[force.name].technologies['planet-discovery-aquilo'].enabled = false
-        game.forces[force.name].technologies['promethium-science-pack'].enabled = false
         game.forces[force.name].technologies['artillery'].enabled = false
         game.forces[force.name].technologies['artillery-shell-range-1'].enabled = false
         game.forces[force.name].technologies['artillery-shell-speed-1'].enabled = false
@@ -502,9 +536,12 @@ function Public.forces()
         storage.ai_target_destroyed_map = {}
         storage.spy_fish_timeout[force.name] = 0
         storage.bb_evolution[force.name] = 0
-        storage.biter_health_factor[force.index] = 1.0
-        storage.bb_threat_income[force.name] = 0
+        storage.bb_quality[force.name] = 0.1
         storage.bb_threat[force.name] = 0
+        storage.bb_flood_income[force.name] = 0
+        storage.bb_flood[force.name] = 0
+        storage.total_passive_feed_redpotion[force.name] = 0
+        storage.passive_feed_redpotion[force.name] = 0
     end
     for _, force in pairs(Tables.ammo_modified_forces_list) do
         for ammo_category, value in pairs(Tables.base_ammo_modifiers) do

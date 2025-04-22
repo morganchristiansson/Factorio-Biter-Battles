@@ -30,6 +30,27 @@ local raw_cost_display_order = {
     'crude-oil',
     -- We intentionally exclude "water" because it is very inaccurate due
     -- to not really properly estimating oil cracking
+
+    --space
+    'ice',
+
+    --gleba
+    'jelly',
+    'yumako-mash',
+
+    --vulcanus
+    'tungsten-ore',
+    'calcite',
+
+    --fulgora
+    'holmium-ore',
+
+    --aquilo
+    'cryogenic-science-pack',
+
+    --promethium
+    'quantum-processor',
+    'promethium-asteroid-chunk',
 }
 
 ---@param player LuaPlayer
@@ -90,7 +111,7 @@ local function add_feed_values(player, element, food_product_info)
         local resources = 0
         local resources_tooltip = ''
         local resource_efficiency_tooltip =
-            'Resource requirements for 1000 space science every 40 minutes equivalent mutagen production.'
+            'Resource requirements for 100 cryogenic science every 40 minutes equivalent mutagen production.'
         local num_intermediates = 0
         for k, v in pairs(info.raw_ingredients) do
             resources = resources + v * raw_costs[k].cost
@@ -103,7 +124,7 @@ local function add_feed_values(player, element, food_product_info)
             normalized_mutagen_value = mutagen_val
             normalized_resource_value = resources
         end
-        local scale = 1000 / (40 * 60) * Tables.food_values['space-science-pack'].value / mutagen_val
+        local scale = 100 / (40 * 60) * Tables.food_values['cryogenic-science-pack'].value / mutagen_val
         resource_efficiency_tooltip = resource_efficiency_tooltip
             .. string.format(
                 '\n[img=item/%s] %.2f/s       %.0f/min',

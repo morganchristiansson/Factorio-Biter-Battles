@@ -1,8 +1,8 @@
 --[[
 roll(budget, max_slots, blacklist) returns a table with item-stacks
-budget		-	the total value of the item stacks combined
-max_slots	-	the maximum amount of item stacks to return
-blacklist		-	optional list of item names that can not be rolled. example: {["substation"] = true, ["roboport"] = true,}
+budget        -    the total value of the item stacks combined
+max_slots    -    the maximum amount of item stacks to return
+blacklist        -    optional list of item names that can not be rolled. example: {["substation"] = true, ["roboport"] = true,}
 ]]
 local Public = {}
 
@@ -397,6 +397,58 @@ local tech_tier_list = {
     'rocket-silo',
 }
 
+local rare_loot_list = {
+    'railgun-ammo',
+    'railgun-ammo',
+    'tesla-ammo',
+    'tesla-ammo',
+    'tesla-ammo',
+}
+
+local epic_loot_list = {
+    'battery-equipment',
+    'solar-panel-equipment',
+    'solar-panel-equipment',
+}
+
+local tier_1_loot_list = {
+    'solar-panel-equipment',
+    'solar-panel-equipment',
+    'solar-panel-equipment',
+    'solar-panel-equipment',
+    'toolbelt-equipment',
+    'toolbelt-equipment',
+    'battery-equipment',
+    'battery-equipment',
+    'energy-shield-equipment',
+    'exoskeleton-equipment',
+}
+
+local tier_2_loot_list = {
+    'toolbelt-equipment',
+    'battery-equipment',
+    'energy-shield-equipment',
+    'solar-panel-equipment',
+    'solar-panel-equipment',
+    'exoskeleton-equipment',
+    'combat-shotgun',
+}
+
+local tier_3_loot_list = {
+    'energy-shield-equipment',
+    'solar-panel-equipment',
+    'modular-armor',
+    'exoskeleton-equipment',
+    'combat-shotgun',
+}
+
+local tier_4_loot_list = {
+    'energy-shield-equipment',
+    'solar-panel-equipment',
+    'modular-armor',
+    'exoskeleton-equipment',
+}
+
 local item_names = {}
 for k, v in pairs(item_worths) do
     table_insert(item_names, k)
@@ -491,11 +543,11 @@ function Public.roll(budget, max_slots, blacklist)
         end
     end
     --[[
-	for k, item_stack in pairs(final_stack_set) do
-		game.print(item_stack.count .. "x " .. item_stack.name)
-	end
-	game.print(final_stack_set_worth)
-	]]
+    for k, item_stack in pairs(final_stack_set) do
+        game.print(item_stack.count .. "x " .. item_stack.name)
+    end
+    game.print(final_stack_set_worth)
+    ]]
     return final_stack_set
 end
 
@@ -513,6 +565,28 @@ end
 function Public.get_item_value(item)
     local value = item_worths[item]
     return value
+end
+
+function Public.roll_tier_loot(tier)
+    if tier == 1 then
+        return tier_1_loot_list[math.random(1, #tier_1_loot_list)]
+    elseif tier == 2 then
+        return tier_2_loot_list[math.random(1, #tier_2_loot_list)]
+    elseif tier == 3 then
+        return tier_3_loot_list[math.random(1, #tier_3_loot_list)]
+    else
+        return tier_4_loot_list[math.random(1, #tier_4_loot_list)]
+    end
+end
+
+function Public.roll_loot(kill_quality)
+    if kill_quality == 'legendary' then
+        return tier_2_loot_list[math.random(1, #tier_2_loot_list)]
+    elseif kill_quality == 'epic' then
+        return epic_loot_list[math.random(1, #epic_loot_list)]
+    else
+        return rare_loot_list[math.random(1, #rare_loot_list)]
+    end
 end
 
 return Public

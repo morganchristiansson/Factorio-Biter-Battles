@@ -11,7 +11,6 @@ local session = require('utils.datastore.session_data')
 local ai_targets_start_tracking = AiTargets.start_tracking
 local bb_config_bitera_area_distance = bb_config.bitera_area_distance
 local bb_config_biter_area_slope = bb_config.biter_area_slope
-local biter_raffle_roll = BiterRaffle.roll
 local spawn_ore = tables.spawn_ore
 local table_insert = table.insert
 local table_remove = table.remove
@@ -112,7 +111,6 @@ function Public.adjust_map_gen_settings(map_gen_settings)
 --     map_gen_settings.default_enable_all_autoplace_controls = false
     map_gen_settings.starting_area = 2.5
     local pen = map_gen_settings.property_expression_names
-    pen['gleba_spawner'] = '0' -- only small egg rafts
     pen['control:gleba_water:size'] = "1"
 
     map_gen_settings.cliff_settings = { cliff_elevation_interval = 0, cliff_elevation_0 = 0 }
@@ -126,9 +124,6 @@ function Public.adjust_map_gen_settings(map_gen_settings)
     ac['crude-oil'] = { frequency = 8, size = 1.4, richness = 0.45 }
     ac['water'] = { frequency = 10, size = 0.3 }
     ac['trees'] = { frequency = 0.65, size = 0.04 }
-    --ac['gleba_plants'] = { frequency = 6, size = 6, richness = 6 }
-    ac['gleba_water'] = { frequency = 2, size = 0.02, richness = 1 }
-    ac['ammonia_ocean'] = { frequency = 1, size = 0.7, richness = 1 }
 end
 
 ---@enum area_intersection
@@ -295,7 +290,7 @@ end
 ---@return number y
 local function river_start(seed, x, include_spawn_circle)
     return -river_width_half
-end
+        end
 
 ---@param chunk_pos {x: number, y: number}
 local function is_outside_spawn(chunk_pos)
@@ -333,14 +328,14 @@ local function generate_starting_area(surface, chunk_pos, rng)
     -- distance_from_spawn_wall is the difference between the distance_to_center (with added noise)
     -- and our spawn_wall radius (spawn_wall_radius=116), i.e. how far are we from the ring with radius spawn_wall_radius.
     -- The following shows what happens depending on distance_from_spawn_wall:
-    --   	min     max
-    --  	N/A     -10	    => replace water
+    --      min     max
+    --      N/A     -10     => replace water
     -- if noise_2 > -0.4:
-    --      -1.75    0 	    => wall
+    --      -1.75    0      => wall
     -- else:
-    --   	-6      -3 	 	=> 1/16 chance of turret or turret-remnants
-    --   	-1.95    0 	 	=> wall
-    --    	 0       4.5    => chest-remnants with 1/3, chest with 1/(distance_from_spawn_wall+2)
+    --      -6      -3      => 1/16 chance of turret or turret-remnants
+    --      -1.95    0      => wall
+    --       0       4.5    => chest-remnants with 1/3, chest with 1/(distance_from_spawn_wall+2)
     --
     -- => We never do anything for (distance_to_center + min_noise - spawn_wall_radius) > 4.5
     for x = left_top_x, left_top_x + 32 - 1 do
@@ -834,8 +829,8 @@ function Public.generate_initial_structures(surface)
     force_spawn_chunks_generation(surface, true)
     local rng = create_rng_for_chunk({ x = 1, y = 1 }, surface.map_gen_settings.seed)
     draw_spawn_area(surface, rng)
-    clear_ore_in_main(surface)
-    generate_spawn_ore(surface, rng)
+        clear_ore_in_main(surface)
+        generate_spawn_ore(surface, rng)
     generate_additional_rocks(surface, rng)
     generate_silo(surface, rng)
     draw_spawn_island(surface)

@@ -25,7 +25,7 @@ end
 --- Sends a message to the linked discord channel. The message is sanitized of markdown server side, then made bold.
 -- @param  message<string> message to send.
 function Public.to_discord_bold(message)
-    raw_print(discord_bold_tag .. message)
+    log({'', discord_bold_tag, message})
 end
 
 --- Sends a embed message to the linked discord channel. The message is sanitized of markdown server side.
